@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background-color: #1e1e1e;
+  color: rgba(255, 255, 255, 0.92);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* macOS-style overlay scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 100px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Electron title bar drag */
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Native-ish text selection */
+::selection {
+  background: rgba(10, 132, 255, 0.35);
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.22s ease forwards;
+}
+
+/* Grouped list row (Settings-style) */
+@layer components {
+  .mac-panel {
+    @apply rounded-mac bg-dark-800 border border-white/[0.06] shadow-mac-sm;
+  }
+  .mac-btn-default {
+    @apply rounded-mac-sm px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-150;
+    @apply bg-mac-fill text-white/90 hover:bg-mac-fillHover active:bg-white/[0.12];
+    @apply border border-white/[0.08] shadow-[0_1px_0_rgba(255,255,255,0.04)_inset];
+  }
+  .mac-btn-primary {
+    @apply rounded-mac-sm px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-150;
+    @apply bg-accent-blue text-white hover:brightness-110 active:brightness-95;
+    @apply shadow-[0_1px_0_rgba(255,255,255,0.15)_inset];
+  }
+}

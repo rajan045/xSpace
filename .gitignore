@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-electron/
+release/
+
+# TypeScript
+*.tsbuildinfo
+
+# Vite
+*.local
+vite.config.*.timestamp-*
+
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Logs & debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Testing / coverage
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.idea/
+*.swp
+*.swo
+
+# Optional marketing site (Next.js / Node)
+website/node_modules/
+website/.next/
+website/out/
+website/.env*.local
+
+# electron-builder / code signing (never commit)
+*.p12
+*.cer
+*.mobileprovision
+AuthKey_*.p8
