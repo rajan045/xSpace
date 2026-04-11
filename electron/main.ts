@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, dialog, nativeImage } from 'electron'
+import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import { getDiskInfo } from './scanners/diskInfo'
@@ -14,7 +15,16 @@ import { getSystemDataBreakdown } from './scanners/systemData'
 
 const isDev = process.env.NODE_ENV === 'development'
 
+function windowIcon(): Electron.NativeImage | undefined {
+  const iconPath = path.join(__dirname, '../../build/icon.png')
+  if (fs.existsSync(iconPath)) {
+    return nativeImage.createFromPath(iconPath)
+  }
+  return undefined
+}
+
 function createWindow() {
+  const icon = windowIcon()
   const win = new BrowserWindow({
     width: 1200,
     height: 780,
@@ -22,6 +32,7 @@ function createWindow() {
     minHeight: 600,
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#1e1e1e',
+    ...(icon ? { icon } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

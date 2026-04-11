@@ -33,7 +33,7 @@ export default function Sidebar() {
             <Zap size={15} className="text-accent-blue" />
           </div>
           <div className="min-w-0">
-            <div className="text-[13px] font-semibold text-white/90 leading-tight truncate">SpaceX</div>
+            <div className="text-[13px] font-semibold text-white/90 leading-tight truncate">xSpace</div>
             <div className="text-[11px] text-white/40 leading-tight">Mac Cleaner</div>
           </div>
         </div>

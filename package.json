@@ -1,5 +1,5 @@
 {
-  "name": "spacex-mac-cleaner",
+  "name": "xspace",
   "version": "1.0.0",
   "description": "MacBook storage cleaner with a beautiful UI",
   "main": "dist-electron/electron/main.js",
@@ -7,7 +7,8 @@
     "dev": "concurrently -k \"vite --port 5173 --strictPort\" \"npm run electron-dev\"",
     "electron-dev": "wait-on tcp:5173 && tsc -p tsconfig.node.json && cross-env NODE_ENV=development electron .",
     "build": "tsc -p tsconfig.node.json && vite build",
-    "build:electron": "npm run build && electron-builder",
+    "build:electron": "npm run build && electron-builder --config electron-builder.config.cjs",
+    "build:electron:signed": "npm run build && cross-env MAC_BUILD_SIGNED=1 electron-builder --config electron-builder.config.cjs",
     "preview": "vite preview",
     "website:setup": "bash scripts/create-download-website.sh",
     "website:dev": "cd website && npm run dev",
@@ -15,7 +16,7 @@
     "website:start": "cd website && npm run start"
   },
   "keywords": [],
-  "author": "SpaceX",
+  "author": "xSpace",
   "license": "MIT",
   "dependencies": {
     "electron-store": "^8.1.0",
@@ -32,6 +33,7 @@
     "autoprefixer": "^10.4.18",
     "concurrently": "^8.2.0",
     "cross-env": "^7.0.3",
+    "@electron/notarize": "^2.5.0",
     "electron": "^29.1.0",
     "electron-builder": "^24.13.0",
     "postcss": "^8.4.35",
@@ -40,24 +42,5 @@
     "vite": "^5.1.4",
     "vite-plugin-electron": "^0.28.4",
     "wait-on": "^7.2.0"
-  },
-  "build": {
-    "appId": "com.spacex.mac-cleaner",
-    "productName": "SpaceX Cleaner",
-    "directories": {
-      "output": "release"
-    },
-    "mac": {
-      "target": ["dmg", "zip"],
-      "category": "public.app-category.utilities",
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist",
-      "hardenedRuntime": true
-    },
-    "files": [
-      "dist/**/*",
-      "dist-electron/**/*",
-      "node_modules/**/*"
-    ]
   }
 }

@@ -17,7 +17,7 @@ function NotInElectron() {
         <div className="w-14 h-14 rounded-[12px] bg-dark-800 border border-white/[0.08] shadow-mac-sm flex items-center justify-center mx-auto mb-5">
           <Zap size={26} className="text-accent-blue" />
         </div>
-        <h1 className="text-[17px] font-semibold text-white/90 tracking-tight mb-1">SpaceX Mac Cleaner</h1>
+        <h1 className="text-[17px] font-semibold text-white/90 tracking-tight mb-1">xSpace</h1>
         <div className="flex items-center justify-center gap-2 mb-3 text-accent-orange">
           <AlertTriangle size={14} />
           <span className="text-[13px] font-medium">Open in the desktop app</span>
@@ -27,7 +27,7 @@ function NotInElectron() {
         </p>
         <div className="mac-panel p-4 text-left">
           <p className="text-[11px] text-white/35 uppercase tracking-wide mb-2 font-medium">Terminal</p>
-          <code className="text-[12px] text-accent-green font-mono block">cd ~/Desktop/rajan/spaceX</code>
+          <code className="text-[12px] text-accent-green font-mono block">cd path/to/xSpace/spaceX</code>
           <code className="text-[12px] text-accent-green font-mono block mt-1.5">npm run dev</code>
         </div>
         <p className="text-[11px] text-white/25 mt-4">Do not use the browser tab for scanning.</p>
