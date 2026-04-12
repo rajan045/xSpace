@@ -8,7 +8,7 @@ interface SafeItem {
   reason: string
   path: string
   size: number
-  category: 'cache' | 'build' | 'simulator' | 'trash'
+  category: 'cache' | 'build' | 'simulator' | 'trash' | 'nodemodules'
 }
 
 interface ScanResult {
@@ -19,10 +19,11 @@ interface ScanResult {
 type PageState = 'idle' | 'scanning' | 'results' | 'cleaning' | 'done'
 
 const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  cache:     { label: 'Caches',           icon: <Layers size={14} />,     color: '#BF5AF2' },
-  build:     { label: 'Build Artifacts',  icon: <Package size={14} />,    color: '#64D2FF' },
-  simulator: { label: 'iOS Simulators',   icon: <Smartphone size={14} />, color: '#0A84FF' },
-  trash:     { label: 'Trash',            icon: <Trash2 size={14} />,     color: '#FF453A' },
+  cache:        { label: 'Caches',           icon: <Layers size={14} />,     color: '#BF5AF2' },
+  build:        { label: 'Build Artifacts',  icon: <Package size={14} />,    color: '#64D2FF' },
+  simulator:    { label: 'iOS Simulators',   icon: <Smartphone size={14} />, color: '#0A84FF' },
+  trash:        { label: 'Trash',            icon: <Trash2 size={14} />,     color: '#FF453A' },
+  nodemodules:  { label: 'node_modules',   icon: <Package size={14} />,    color: '#30D158' },
 }
 
 export default function SmartClean() {
@@ -110,10 +111,12 @@ export default function SmartClean() {
         </div>
         <h1 className="text-[22px] font-semibold text-white mb-1.5 tracking-tight">Smart Clean</h1>
         <p className="text-white/45 text-[13px] mb-2 text-center max-w-sm leading-relaxed">
-          Finds data that is <span className="text-white/80 font-medium">safe to remove</span> — caches and rebuildable developer junk.
+          Finds data that is <span className="text-white/80 font-medium">safe to remove</span> — caches,{' '}
+          <span className="text-white/70">node_modules</span> (restored with npm/yarn), and other rebuildable junk.
         </p>
         <p className="text-white/30 text-[12px] mb-8 text-center max-w-xs">
-          Does not remove browser history, cookies, saved logins, bookmarks, or extensions. Skips Downloads, Documents, Photos, and your own files.
+          Does not remove browser history, cookies, saved logins, bookmarks, or extensions. Scans your home folder for{' '}
+          <code className="text-white/45">node_modules</code> (skips Library, Trash, .npm). Review paths before deleting.
         </p>
         <button type="button" onClick={scan} className="mac-btn-primary flex items-center gap-2.5 px-5 py-2.5 text-[15px] bg-accent-green hover:brightness-110 shadow-[0_1px_0_rgba(255,255,255,0.15)_inset]">
           <Zap size={17} />
