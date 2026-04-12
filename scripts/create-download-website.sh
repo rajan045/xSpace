@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WEB="$ROOT/website"
 
 if [[ ! -f "$WEB/package.json" ]]; then
-  echo "Error: $WEB/package.json not found. Is this the SpaceX Mac Cleaner repo?"
+  echo "Error: $WEB/package.json not found. Is this the xSpace repo?"
   exit 1
 fi
 

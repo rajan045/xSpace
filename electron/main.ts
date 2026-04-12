@@ -1,5 +1,30 @@
-import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, dialog, nativeImage } from 'electron'
+import dotenv from 'dotenv'
+import fs from 'fs'
 import path from 'path'
+
+/** Load `.env` from the first path that exists (compiled `dist-electron/electron` vs `cwd`). */
+function loadEnvFile(): void {
+  const candidates = [
+    path.join(__dirname, '../../.env'),
+    path.join(process.cwd(), '.env'),
+  ]
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      dotenv.config({ path: p })
+      return
+    }
+  }
+  dotenv.config()
+}
+
+loadEnvFile()
+
+// Default API URL for local runs when `.env` is missing or not loaded (non-packaged app only).
+if (!process.env.XSPACE_API_URL?.trim() && !app.isPackaged) {
+  process.env.XSPACE_API_URL = 'http://localhost:4000'
+}
+
 import os from 'os'
 import { getDiskInfo } from './scanners/diskInfo'
 import { getLargeFiles } from './scanners/largeFiles'
@@ -11,10 +36,48 @@ import { deleteItems, moveToTrash } from './scanners/fileOps'
 import { listDirContents } from './scanners/listDir'
 import { runSmartScan } from './scanners/smartScan'
 import { getSystemDataBreakdown } from './scanners/systemData'
+import {
+  getRunningOverview,
+  quitUserProcess,
+  unloadUserLaunchAgent,
+} from './scanners/runningOverview'
+import {
+  dismissTrialWelcome,
+  getLicenseStatus,
+  setLicenseKey,
+  syncPublicConfigFromApi,
+} from './licenseState'
+import {
+  deleteAllDeviceBindings,
+  deleteDeviceBinding,
+  fetchDevicesList,
+  fetchTokenMe,
+  generateApiToken,
+  getAuthStateForRenderer,
+  login as authLogin,
+  logoutAuth,
+  register as authRegister,
+  revokeAllApiTokens,
+  setApiTokenFromUser,
+  syncEntitlementFromApi,
+} from './authService'
+import {
+  fetchSubscriptionHistoryMe,
+  postAppLaunchEventFireAndForget,
+} from './subscriptionTracking'
 
 const isDev = process.env.NODE_ENV === 'development'
 
+function windowIcon(): Electron.NativeImage | undefined {
+  const iconPath = path.join(__dirname, '../../build/icon.png')
+  if (fs.existsSync(iconPath)) {
+    return nativeImage.createFromPath(iconPath)
+  }
+  return undefined
+}
+
 function createWindow() {
+  const icon = windowIcon()
   const win = new BrowserWindow({
     width: 1200,
     height: 780,
@@ -22,6 +85,7 @@ function createWindow() {
     minHeight: 600,
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#1e1e1e',
+    ...(icon ? { icon } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -40,8 +104,18 @@ function createWindow() {
   win.once('ready-to-show', () => win.show())
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await Promise.race([
+    syncPublicConfigFromApi(),
+    new Promise<void>((resolve) => setTimeout(resolve, 2500)),
+  ])
+  await Promise.race([
+    syncEntitlementFromApi(),
+    new Promise<void>((resolve) => setTimeout(resolve, 2500)),
+  ])
+
   createWindow()
+  postAppLaunchEventFireAndForget()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -144,6 +218,18 @@ ipcMain.handle('get-system-data', async () => {
   return getSystemDataBreakdown()
 })
 
+ipcMain.handle('get-running-overview', async () => {
+  return getRunningOverview()
+})
+
+ipcMain.handle('quit-user-process', async (_e, pid: number) => {
+  return quitUserProcess(pid)
+})
+
+ipcMain.handle('unload-user-launch-agent', async (_e, plistPath: string) => {
+  return unloadUserLaunchAgent(plistPath)
+})
+
 ipcMain.handle('show-in-finder', async (_e, filePath: string) => {
   shell.showItemInFolder(filePath)
   return true
@@ -151,5 +237,92 @@ ipcMain.handle('show-in-finder', async (_e, filePath: string) => {
 
 ipcMain.handle('open-path', async (_e, filePath: string) => {
   await shell.openPath(filePath)
+  return true
+})
+
+ipcMain.handle('auth-login', async (_e, email: string, password: string) => {
+  const r = await authLogin(email, password)
+  if (r.ok) broadcastLicenseChanged()
+  return r
+})
+
+ipcMain.handle('auth-register', async (_e, email: string, password: string) => {
+  const r = await authRegister(email, password)
+  if (r.ok) broadcastLicenseChanged()
+  return r
+})
+
+function broadcastLicenseChanged() {
+  BrowserWindow.getAllWindows().forEach((w) => {
+    w.webContents.send('license-changed')
+  })
+}
+
+ipcMain.handle('auth-logout', () => {
+  logoutAuth()
+  broadcastLicenseChanged()
+  return true
+})
+
+ipcMain.handle('auth-get-state', () => {
+  return getAuthStateForRenderer()
+})
+
+ipcMain.handle('auth-set-api-token', async (_e, token: string) => {
+  const r = await setApiTokenFromUser(token)
+  if (r.ok) broadcastLicenseChanged()
+  return r
+})
+
+ipcMain.handle('auth-sync-entitlement', async () => {
+  await syncEntitlementFromApi()
+  broadcastLicenseChanged()
+  return getAuthStateForRenderer()
+})
+
+ipcMain.handle('auth-generate-token', async () => {
+  return generateApiToken()
+})
+
+ipcMain.handle('auth-fetch-devices', async () => {
+  return fetchDevicesList()
+})
+
+ipcMain.handle('auth-delete-device', async (_e, deviceId: string) => {
+  return deleteDeviceBinding(deviceId)
+})
+
+ipcMain.handle('auth-delete-all-devices', async () => {
+  return deleteAllDeviceBindings()
+})
+
+ipcMain.handle('auth-fetch-token-me', async () => {
+  return fetchTokenMe()
+})
+
+ipcMain.handle('auth-revoke-tokens', async () => {
+  const r = await revokeAllApiTokens()
+  if (r.ok) broadcastLicenseChanged()
+  return r
+})
+
+ipcMain.handle('subscription-history-me', async (_e, limit?: number) => {
+  return fetchSubscriptionHistoryMe(typeof limit === 'number' ? limit : 20)
+})
+
+ipcMain.handle('license-status', () => {
+  return getLicenseStatus()
+})
+
+ipcMain.handle('set-license-key', (_e, key: string) => {
+  return setLicenseKey(key)
+})
+
+ipcMain.handle('dismiss-trial-welcome', () => {
+  return dismissTrialWelcome()
+})
+
+ipcMain.handle('open-external', (_e, url: string) => {
+  shell.openExternal(url)
   return true
 })

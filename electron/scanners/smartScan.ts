@@ -2,6 +2,7 @@ import os from 'os'
 import fs from 'fs'
 import path from 'path'
 import { getDirSizeAsync, run } from './utils'
+import { scanNodeModules } from './nodeModulesScan'
 
 export interface SafeItem {
   id: string
@@ -9,7 +10,7 @@ export interface SafeItem {
   reason: string
   path: string
   size: number
-  category: 'cache' | 'build' | 'simulator' | 'trash'
+  category: 'cache' | 'build' | 'simulator' | 'trash' | 'nodemodules'
 }
 
 export interface SmartScanResult {
@@ -242,14 +243,15 @@ async function scanTrash(): Promise<SafeItem[]> {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export async function runSmartScan(): Promise<SmartScanResult> {
-  const [caches, build, simulators, trash] = await Promise.all([
+  const [caches, build, simulators, trash, nodeModules] = await Promise.all([
     scanCaches(),
     scanBuildArtifacts(),
     scanSimulators(),
     scanTrash(),
+    scanNodeModules(),
   ])
 
-  const items = [...caches, ...build, ...simulators, ...trash]
+  const items = [...caches, ...build, ...simulators, ...trash, ...nodeModules]
     .sort((a, b) => b.size - a.size)
 
   const totalSize = items.reduce((sum, i) => sum + i.size, 0)
