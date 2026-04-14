@@ -1,14 +1,14 @@
 {
   "name": "xspace",
-  "version": "1.0.0",
+  "version": "4.0.0",
   "description": "MacBook storage cleaner with a beautiful UI",
   "main": "dist-electron/electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite --port 5173 --strictPort\" \"npm run electron-dev\"",
     "electron-dev": "wait-on tcp:5173 && tsc -p tsconfig.node.json && cross-env NODE_ENV=development electron .",
     "build": "tsc -p tsconfig.node.json && vite build",
-    "build:electron": "npm run build && electron-builder --config electron-builder.config.cjs",
-    "build:electron:signed": "npm run build && cross-env MAC_BUILD_SIGNED=1 electron-builder --config electron-builder.config.cjs",
+    "build:electron": "npm run build && cross-env MAC_BUILD_SIGNED=1 electron-builder --config electron-builder.config.cjs",
+    "build:electron:unsigned": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --config electron-builder.config.cjs",
     "preview": "vite preview",
     "website:setup": "bash scripts/create-download-website.sh",
     "website:dev": "cd website && npm run dev",
