@@ -9,14 +9,15 @@
  * Local ad-hoc (unsigned): `npm run build:electron:unsigned` — sets
  * CSC_IDENTITY_AUTO_DISCOVERY=false; no hardened runtime (avoids broken ad-hoc + entitlements).
  *
- * Notarization: set APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID (see afterSign hook).
+ * Notarization (required for public DMG / no Gatekeeper block): copy `.env.signing.example`
+ * to `.env.signing` with APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID (loaded in afterSign).
  */
 const signed = process.env.MAC_BUILD_SIGNED === "1";
 
 module.exports = {
   appId: "com.xspace.app",
   productName: "xSpace",
-  /** DMG filename: xspace-4.0.0-arm64.dmg (uses package.json `name`, lowercase). */
+  /** DMG filename: xspace-5.0.0-arm64.dmg (uses package.json `name`, lowercase). */
   artifactName: "${name}-${version}-${arch}.${ext}",
   icon: "build/icon.png",
   /** Avoid requiring GH_TOKEN when CI env vars are present locally. */

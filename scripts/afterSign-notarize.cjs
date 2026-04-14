@@ -1,8 +1,18 @@
 /**
- * electron-builder afterSign hook. Notarizes the .app when Apple env vars are set.
+ * electron-builder afterSign hook. Notarizes and staples the .app when Apple env vars are set.
  * Requires a "Developer ID Application" cert so codesign runs before notarytool.
- * If env vars are missing, the build still succeeds (typical for local unsigned builds).
+ *
+ * Loads `spaceX/.env.signing` if present (see `.env.signing.example`). Exporting the same
+ * vars in the shell also works.
  */
+const path = require("path");
+const fs = require("fs");
+
+const signingEnv = path.join(__dirname, "..", ".env.signing");
+if (fs.existsSync(signingEnv)) {
+  require("dotenv").config({ path: signingEnv });
+}
+
 module.exports = async function afterSign(context) {
   if (context.electronPlatformName !== "darwin") return;
 
@@ -11,9 +21,15 @@ module.exports = async function afterSign(context) {
   const teamId = process.env.APPLE_TEAM_ID?.trim();
 
   if (!appleId || !appleIdPassword || !teamId) {
+    const signed = process.env.MAC_BUILD_SIGNED === "1";
     console.log(
-      "[afterSign] Skipping notarization. For public downloads: Apple Developer account, Developer ID Application certificate in Keychain, then set APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID."
+      "[afterSign] Skipping notarization. Set APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID (e.g. in .env.signing from .env.signing.example)."
     );
+    if (signed) {
+      console.warn(
+        "[afterSign] Signed but not notarized: macOS will show “Apple could not verify…” (Gatekeeper). Create .env.signing and rebuild, or use System Settings → Privacy & Security → Open Anyway once."
+      );
+    }
     return;
   }
 
