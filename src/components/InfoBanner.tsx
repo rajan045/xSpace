@@ -12,7 +12,7 @@ export default function InfoBanner({ id, title, children }: InfoBannerProps) {
   const [dismissed, setDismissed] = useState(() => {
     try { return localStorage.getItem(storageKey) === '1' } catch { return false }
   })
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
 
   function dismiss() {
     try { localStorage.setItem(storageKey, '1') } catch {}

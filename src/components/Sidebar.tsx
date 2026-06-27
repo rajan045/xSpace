@@ -9,9 +9,10 @@ import {
   Smartphone,
   ShieldCheck,
   Activity,
-  User,
+  AppWindow,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
+import AccountButton from './AccountButton'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Overview', exact: true },
@@ -20,6 +21,7 @@ const navItems = [
   { to: '/duplicates', icon: Copy, label: 'Duplicates' },
   { to: '/trash', icon: Trash2, label: 'Trash' },
   { to: '/ios-data', icon: Smartphone, label: 'iOS & Xcode' },
+  { to: '/apps', icon: AppWindow, label: 'Uninstaller' },
   { to: '/running', icon: Activity, label: 'Running' },
 ]
 
@@ -46,7 +48,7 @@ export default function Sidebar() {
           <NavLink
             to="/smart-clean"
             className={({ isActive }) =>
-              `flex items-center gap-2 px-2.5 py-2 rounded-mac-sm text-[13px] font-medium transition-all duration-150 border ${
+              `flex items-center gap-2 px-2.5 py-2 rounded-mac-sm text-[13px] font-medium transition-all duration-150 border outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
                 isActive
                   ? 'bg-accent-green text-white border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.12)_inset]'
                   : 'bg-accent-green/85 text-white border-transparent hover:bg-accent-green hover:border-white/10'
@@ -86,27 +88,8 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        <div className="px-2 pb-2">
-          <NavLink
-            to="/account"
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 px-2.5 py-1.5 rounded-mac-sm text-[13px] transition-colors duration-100 outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50 ${
-                isActive
-                  ? 'bg-white/[0.12] text-white font-medium'
-                  : 'text-white/55 hover:text-white/85 hover:bg-white/[0.06]'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <User size={16} strokeWidth={isActive ? 2 : 1.75} className={isActive ? 'text-accent-blue opacity-100' : 'opacity-80'} />
-                <span>Account</span>
-              </>
-            )}
-          </NavLink>
-        </div>
-
-        <div className="px-3 pt-2 mt-auto border-t border-mac-separator">
+        <div className="px-2 pt-2 mt-auto border-t border-mac-separator space-y-2">
+          <AccountButton />
           <p className="text-[10px] text-white/25 text-center leading-snug px-1">
             Trash is reversible · Review before permanent delete
           </p>

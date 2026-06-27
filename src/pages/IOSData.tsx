@@ -81,10 +81,10 @@ export default function IOSData() {
     })
   }
 
-  const selectedSimPaths = info?.simulators.filter(s => selectedSims.has(s.udid)).map(s => s.path) || []
-  const selectedSimSize = info?.simulators.filter(s => selectedSims.has(s.udid)).reduce((sum, s) => sum + s.size, 0) || 0
+  const selectedSimPaths = info?.simulators?.filter(s => selectedSims.has(s.udid)).map(s => s.path) || []
+  const selectedSimSize = info?.simulators?.filter(s => selectedSims.has(s.udid)).reduce((sum, s) => sum + s.size, 0) || 0
   const selectedDerivedPaths = Array.from(selectedDerived)
-  const selectedDerivedSize = info?.derivedData.filter(d => selectedDerived.has(d.path)).reduce((sum, d) => sum + d.size, 0) || 0
+  const selectedDerivedSize = info?.derivedData?.filter(d => selectedDerived.has(d.path)).reduce((sum, d) => sum + d.size, 0) || 0
 
   async function doDelete() {
     const kind = modal.type
@@ -177,8 +177,8 @@ export default function IOSData() {
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'summary', label: 'Summary' },
-    { id: 'simulators', label: `Simulators (${info?.simulators.length || 0})` },
-    { id: 'derived', label: `Derived Data (${info?.derivedData.length || 0})` },
+    { id: 'simulators', label: `Simulators (${info?.simulators?.length || 0})` },
+    { id: 'derived', label: `Derived Data (${info?.derivedData?.length || 0})` },
   ]
 
   return (
@@ -376,7 +376,10 @@ export default function IOSData() {
                       </div>
                       <div className="text-sm font-semibold text-white/70 shrink-0">{formatBytes(entry.size)}</div>
                       <button
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-white/10 text-white/40 shrink-0"
+                        type="button"
+                        aria-label={`Show ${entry.name} in Finder`}
+                        title="Show in Finder"
+                        className="mac-focus opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1.5 rounded hover:bg-white/10 text-white/40 shrink-0"
                         onClick={e => { e.stopPropagation(); window.electronAPI.showInFinder(entry.path) }}
                       >
                         <ExternalLink size={13} />

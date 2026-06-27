@@ -265,7 +265,10 @@ export default function Duplicates() {
                           </span>
                         )}
                         <button
-                          className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 shrink-0"
+                          type="button"
+                          aria-label={`Show ${file.name} in Finder`}
+                          title="Show in Finder"
+                          className="mac-focus p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 shrink-0"
                           onClick={e => { e.stopPropagation(); window.electronAPI.showInFinder(file.path) }}
                         >
                           <ExternalLink size={12} />

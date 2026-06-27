@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { AlertTriangle, X, CheckCircle2, ArrowRight, HelpCircle } from 'lucide-react'
 import { formatBytes } from '../utils/format'
 
@@ -49,6 +49,20 @@ export default function ConfirmModal({
   aboutImpact,
   selectedNames,
 }: ConfirmModalProps) {
+  const cancelRef = useRef<HTMLButtonElement>(null)
+  const titleId = useRef(`confirm-${Math.random().toString(36).slice(2, 8)}`).current
+
+  // Escape closes; focus the (safe) Cancel button when opened.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', onKey)
+    cancelRef.current?.focus()
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onCancel])
+
   if (!open) return null
 
   const sureText = confirmationQuestion ?? defaultConfirmationQuestion(danger)
@@ -67,6 +81,7 @@ export default function ConfirmModal({
       <div
         role="dialog"
         aria-modal
+        aria-labelledby={titleId}
         className="relative z-10 w-full max-w-[440px] max-h-[min(90vh,640px)] flex flex-col bg-[#323234] border border-white/[0.1] rounded-mac shadow-mac fade-in"
       >
         <div className="p-5 overflow-y-auto flex-1 min-h-0">
@@ -79,7 +94,7 @@ export default function ConfirmModal({
               <AlertTriangle size={18} className={danger ? 'text-accent-red' : 'text-accent-orange'} />
             </div>
             <div className="flex-1 min-w-0 pt-0.5">
-              <h3 className="text-[15px] font-semibold text-white leading-snug">{title}</h3>
+              <h3 id={titleId} className="text-[15px] font-semibold text-white leading-snug">{title}</h3>
               <p className="text-[13px] text-white/50 mt-1 leading-relaxed">{message}</p>
             </div>
             <button
@@ -184,7 +199,7 @@ export default function ConfirmModal({
         </div>
 
         <div className="flex gap-2 justify-end px-5 py-3 border-t border-white/[0.06] shrink-0 bg-dark-900/30">
-          <button type="button" onClick={onCancel} className="mac-btn-default min-w-[76px]">
+          <button ref={cancelRef} type="button" onClick={onCancel} className="mac-btn-default min-w-[76px]">
             Cancel
           </button>
           <button
@@ -192,7 +207,7 @@ export default function ConfirmModal({
             onClick={onConfirm}
             className={`min-w-[96px] rounded-mac-sm px-3.5 py-1.5 text-[13px] font-medium transition-all ${
               danger
-                ? 'bg-accent-red/90 text-white hover:brightness-110 border border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.12)_inset]'
+                ? 'bg-accent-red/90 text-white hover:brightness-110 border border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.12)_inset] outline-none focus-visible:ring-2 focus-visible:ring-accent-red/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#323234]'
                 : 'mac-btn-primary'
             }`}
           >
