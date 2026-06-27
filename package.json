@@ -1,6 +1,6 @@
 {
   "name": "xspace",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "description": "MacBook storage cleaner with a beautiful UI",
   "main": "dist-electron/electron/main.js",
   "scripts": {
