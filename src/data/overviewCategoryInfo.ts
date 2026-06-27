@@ -8,11 +8,11 @@ export interface CategoryHelp {
 }
 
 export const OVERVIEW_CATEGORY_INFO: Record<string, CategoryHelp> = {
-  'System Data': {
+  'System & Other': {
     contains:
-      'Everything macOS counts as “other” storage: system files under /System and /Library, swap and sleep images, logs, Time Machine local snapshots, caches outside your home folder, and disk space not yet matched to a user category.',
+      'The catch-all bucket: everything not matched to a folder category above. Includes macOS itself, system files under /System and /Library, swap and sleep images, logs, Time Machine local snapshots, and caches outside your home folder. Because xSpace measures by folder, this number is usually larger than the “System Data” shown in macOS System Settings (which splits out macOS, Documents-by-type, etc.).',
     impact:
-      'Most of this is required to run macOS. Deleting the wrong items can stop your Mac from booting or break updates. Browse only what you understand; avoid bulk deletes. Safe cleanups usually happen via “Storage” recommendations or this app’s Smart Clean / Caches — not by deleting random system paths.',
+      'Most of this is required to run macOS. Deleting the wrong items can stop your Mac from booting or break updates. Browse only what you understand; avoid bulk deletes. Safe cleanups usually happen via this app’s Smart Clean / Caches — not by deleting random system paths.',
   },
   Applications: {
     contains:

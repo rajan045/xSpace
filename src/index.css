@@ -92,10 +92,29 @@ html, body, #root {
     @apply rounded-mac-sm px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-150;
     @apply bg-mac-fill text-white/90 hover:bg-mac-fillHover active:bg-white/[0.12];
     @apply border border-white/[0.08] shadow-[0_1px_0_rgba(255,255,255,0.04)_inset];
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/60;
   }
   .mac-btn-primary {
     @apply rounded-mac-sm px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-150;
     @apply bg-accent-blue text-white hover:brightness-110 active:brightness-95;
     @apply shadow-[0_1px_0_rgba(255,255,255,0.15)_inset];
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1e1e1e];
+  }
+  /* Reusable focus ring for custom interactive elements (rows, checkboxes, chips) */
+  .mac-focus {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50;
+  }
+}
+
+/* Respect macOS "Reduce Motion" — kill decorative motion, keep status spinners */
+@media (prefers-reduced-motion: reduce) {
+  .fade-in,
+  .shimmer,
+  .animate-bounce {
+    animation: none !important;
+  }
+  .fade-in {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

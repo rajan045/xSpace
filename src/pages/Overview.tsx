@@ -9,6 +9,7 @@ import ConfirmModal from '../components/ConfirmModal'
 import DeleteSuccessModal from '../components/DeleteSuccessModal'
 import CategoryInfoTooltip from '../components/CategoryInfoTooltip'
 import HoverInfoTooltip from '../components/HoverInfoTooltip'
+import InfoBanner from '../components/InfoBanner'
 import { getSystemFolderHelp, defaultSystemFolderImpact } from '../data/systemFolderInfo'
 import { getNestedItemHelp } from '../data/nestedPathInfo'
 import { buildOverviewDrillDeleteContext } from '../utils/deleteConfirmContext'
@@ -279,6 +280,15 @@ export default function Overview() {
 
       {disk && (
         <>
+          <InfoBanner id="overview-method" title="Why these numbers differ from System Settings">
+            xSpace measures the <strong className="text-white/70">real disk space each folder uses</strong> (physical
+            bytes, like Finder’s Get Info). macOS System Settings instead groups storage <strong className="text-white/70">by
+            file type</strong> and counts iCloud copies, so its categories and totals look different — e.g. a large
+            <em> .zip</em> in Downloads shows under “Downloads” here but under “Documents” there.{' '}
+            <strong className="text-white/70">System &amp; Other</strong> is everything not in a folder above
+            (macOS, system caches, snapshots), so it reads higher than the “System Data” in Settings.
+          </InfoBanner>
+
           <div className="grid grid-cols-3 gap-3 mb-5 shrink-0">
             <StatCard label="Total Storage" value={formatBytes(disk.total)} color="text-white" bg="bg-dark-800" />
             <StatCard label="Used" value={formatBytes(disk.used)} sub={`${disk.usedPercent}% of total`} color="text-accent-blue" bg="bg-accent-blue/5" />
@@ -305,18 +315,23 @@ export default function Overview() {
                 />
               ))}
             </div>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2.5">
-              {disk.categories.map(cat => (
-                <button
-                  key={cat.name}
-                  type="button"
-                  className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/65"
-                  onClick={() => openCategory(cat)}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                  {cat.name}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-2.5">
+              {disk.categories
+                .slice()
+                .sort((a, b) => b.size - a.size)
+                .map(cat => (
+                  <button
+                    key={cat.name}
+                    type="button"
+                    className="mac-focus flex items-center gap-1.5 text-[11px] text-white/55 hover:text-white/85 rounded-mac-sm px-1 -mx-1"
+                    onClick={() => openCategory(cat)}
+                    title={`${cat.name} · ${formatBytes(cat.size)}`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                    <span>{cat.name}</span>
+                    <span className="text-white/40 tabular-nums">{formatBytes(cat.size)}</span>
+                  </button>
+                ))}
             </div>
           </div>
 
@@ -528,7 +543,9 @@ export default function Overview() {
                                   />
                                   <button
                                     type="button"
-                                    className="p-1 rounded-mac-sm opacity-0 group-hover:opacity-100 hover:bg-white/10 text-white/40"
+                                    aria-label={`Show ${entry.name} in Finder`}
+                                    title="Show in Finder"
+                                    className="mac-focus p-1 rounded-mac-sm opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-white/10 text-white/40"
                                     onClick={e => { e.stopPropagation(); window.electronAPI.showInFinder(entry.path) }}
                                   >
                                     <ExternalLink size={12} />
@@ -610,7 +627,9 @@ export default function Overview() {
                                 />
                                 <button
                                   type="button"
-                                  className="p-1 rounded-mac-sm opacity-0 group-hover:opacity-100 hover:bg-white/10 text-white/35"
+                                  aria-label={`Show ${entry.name} in Finder`}
+                                  title="Show in Finder"
+                                  className="mac-focus p-1 rounded-mac-sm opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-white/10 text-white/35"
                                   onClick={e => { e.stopPropagation(); window.electronAPI.showInFinder(entry.path) }}
                                 >
                                   <ExternalLink size={11} />

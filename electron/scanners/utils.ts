@@ -14,7 +14,7 @@ export async function run(cmd: string, timeoutMs = 30000): Promise<string> {
 }
 
 /** Get directory size in bytes using du -sk, async */
-export async function getDirSizeAsync(dirPath: string, timeoutMs = 20000): Promise<number> {
+export async function getDirSizeAsync(dirPath: string, timeoutMs = 60000): Promise<number> {
   const out = await run(`du -sk "${dirPath}" 2>/dev/null | awk '{print $1}'`, timeoutMs)
   return parseInt(out, 10) * 1024 || 0
 }

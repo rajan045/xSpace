@@ -104,7 +104,7 @@ export async function getDiskInfo(): Promise<DiskInfo> {
   const systemData = Math.max(0, used - knownTotal)
 
   const categories: DiskCategory[] = [
-    { name: 'System Data',       size: systemData,   color: '#6b7280', path: '__system__' },
+    { name: 'System & Other',    size: systemData,   color: '#6b7280', path: '__system__' },
     { name: 'Applications',      size: applications, color: '#4f8ef7', path: '/Applications' },
     { name: 'Library & Caches',  size: library,      color: '#8b5cf6', path: `${home}/Library` },
     { name: 'Developer',         size: developer,    color: '#06b6d4', path: `${home}/Library/Developer` },

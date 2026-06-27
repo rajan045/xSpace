@@ -41,30 +41,9 @@ import {
   quitUserProcess,
   unloadUserLaunchAgent,
 } from './scanners/runningOverview'
-import {
-  dismissTrialWelcome,
-  getLicenseStatus,
-  setLicenseKey,
-  syncPublicConfigFromApi,
-} from './licenseState'
-import {
-  deleteAllDeviceBindings,
-  deleteDeviceBinding,
-  fetchDevicesList,
-  fetchTokenMe,
-  generateApiToken,
-  getAuthStateForRenderer,
-  login as authLogin,
-  logoutAuth,
-  register as authRegister,
-  revokeAllApiTokens,
-  setApiTokenFromUser,
-  syncEntitlementFromApi,
-} from './authService'
-import {
-  fetchSubscriptionHistoryMe,
-  postAppLaunchEventFireAndForget,
-} from './subscriptionTracking'
+import { getInstalledApps, findAppLeftovers } from './scanners/appUninstaller'
+import { startBrowserLogin, getStatus as getAuthStatus, logout as authLogout } from './auth'
+import { postAppLaunchEventFireAndForget } from './subscriptionTracking'
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -104,16 +83,7 @@ function createWindow() {
   win.once('ready-to-show', () => win.show())
 }
 
-app.whenReady().then(async () => {
-  await Promise.race([
-    syncPublicConfigFromApi(),
-    new Promise<void>((resolve) => setTimeout(resolve, 2500)),
-  ])
-  await Promise.race([
-    syncEntitlementFromApi(),
-    new Promise<void>((resolve) => setTimeout(resolve, 2500)),
-  ])
-
+app.whenReady().then(() => {
   createWindow()
   postAppLaunchEventFireAndForget()
 
@@ -230,6 +200,30 @@ ipcMain.handle('unload-user-launch-agent', async (_e, plistPath: string) => {
   return unloadUserLaunchAgent(plistPath)
 })
 
+ipcMain.handle('auth:start-login', async () => {
+  try {
+    return await startBrowserLogin()
+  } catch (e) {
+    return { signedIn: false, error: e instanceof Error ? e.message : 'Sign-in failed' }
+  }
+})
+
+ipcMain.handle('auth:status', async () => {
+  return getAuthStatus()
+})
+
+ipcMain.handle('auth:logout', async () => {
+  return authLogout()
+})
+
+ipcMain.handle('get-installed-apps', async () => {
+  return getInstalledApps()
+})
+
+ipcMain.handle('find-app-leftovers', async (_e, appPath: string, bundleId: string, appName: string) => {
+  return findAppLeftovers(appPath, bundleId, appName)
+})
+
 ipcMain.handle('show-in-finder', async (_e, filePath: string) => {
   shell.showItemInFolder(filePath)
   return true
@@ -238,88 +232,6 @@ ipcMain.handle('show-in-finder', async (_e, filePath: string) => {
 ipcMain.handle('open-path', async (_e, filePath: string) => {
   await shell.openPath(filePath)
   return true
-})
-
-ipcMain.handle('auth-login', async (_e, email: string, password: string) => {
-  const r = await authLogin(email, password)
-  if (r.ok) broadcastLicenseChanged()
-  return r
-})
-
-ipcMain.handle('auth-register', async (_e, email: string, password: string) => {
-  const r = await authRegister(email, password)
-  if (r.ok) broadcastLicenseChanged()
-  return r
-})
-
-function broadcastLicenseChanged() {
-  BrowserWindow.getAllWindows().forEach((w) => {
-    w.webContents.send('license-changed')
-  })
-}
-
-ipcMain.handle('auth-logout', () => {
-  logoutAuth()
-  broadcastLicenseChanged()
-  return true
-})
-
-ipcMain.handle('auth-get-state', () => {
-  return getAuthStateForRenderer()
-})
-
-ipcMain.handle('auth-set-api-token', async (_e, token: string) => {
-  const r = await setApiTokenFromUser(token)
-  if (r.ok) broadcastLicenseChanged()
-  return r
-})
-
-ipcMain.handle('auth-sync-entitlement', async () => {
-  await syncEntitlementFromApi()
-  broadcastLicenseChanged()
-  return getAuthStateForRenderer()
-})
-
-ipcMain.handle('auth-generate-token', async () => {
-  return generateApiToken()
-})
-
-ipcMain.handle('auth-fetch-devices', async () => {
-  return fetchDevicesList()
-})
-
-ipcMain.handle('auth-delete-device', async (_e, deviceId: string) => {
-  return deleteDeviceBinding(deviceId)
-})
-
-ipcMain.handle('auth-delete-all-devices', async () => {
-  return deleteAllDeviceBindings()
-})
-
-ipcMain.handle('auth-fetch-token-me', async () => {
-  return fetchTokenMe()
-})
-
-ipcMain.handle('auth-revoke-tokens', async () => {
-  const r = await revokeAllApiTokens()
-  if (r.ok) broadcastLicenseChanged()
-  return r
-})
-
-ipcMain.handle('subscription-history-me', async (_e, limit?: number) => {
-  return fetchSubscriptionHistoryMe(typeof limit === 'number' ? limit : 20)
-})
-
-ipcMain.handle('license-status', () => {
-  return getLicenseStatus()
-})
-
-ipcMain.handle('set-license-key', (_e, key: string) => {
-  return setLicenseKey(key)
-})
-
-ipcMain.handle('dismiss-trial-welcome', () => {
-  return dismissTrialWelcome()
 })
 
 ipcMain.handle('open-external', (_e, url: string) => {

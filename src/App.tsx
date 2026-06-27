@@ -1,10 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
-import { Paywall } from './components/Paywall'
-import { TrialBanner } from './components/TrialBanner'
-import { TrialWelcomeModal } from './components/TrialWelcomeModal'
-import { PRICING_URL } from './constants/pricingUrl'
 import Overview from './pages/Overview'
 import LargeFiles from './pages/LargeFiles'
 import Caches from './pages/Caches'
@@ -13,14 +9,10 @@ import TrashPage from './pages/Trash'
 import IOSData from './pages/IOSData'
 import SmartClean from './pages/SmartClean'
 import Running from './pages/Running'
-import Account from './pages/Account'
+import Apps from './pages/Apps'
 import { AlertTriangle } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
-
-type LicenseState =
-  | { state: 'licensed'; email?: string }
-  | { state: 'trial'; daysLeft: number; showWelcome: boolean }
-  | { state: 'expired' }
+import ErrorBoundary from './components/ErrorBoundary'
 
 function NotInElectron() {
   return (
@@ -50,8 +42,7 @@ function NotInElectron() {
 
 function MainChrome() {
   const loc = useLocation()
-  const sectionLabel =
-    loc.pathname === '/running' ? 'System' : loc.pathname === '/account' ? 'Account' : 'Storage'
+  const sectionLabel = loc.pathname === '/running' ? 'System' : 'Storage'
 
   return (
     <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -63,17 +54,19 @@ function MainChrome() {
           </span>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-8 py-5">
-          <Routes>
-            <Route path="/" element={<Overview />} />
-            <Route path="/large-files" element={<LargeFiles />} />
-            <Route path="/caches" element={<Caches />} />
-            <Route path="/duplicates" element={<Duplicates />} />
-            <Route path="/trash" element={<TrashPage />} />
-            <Route path="/ios-data" element={<IOSData />} />
-            <Route path="/smart-clean" element={<SmartClean />} />
-            <Route path="/running" element={<Running />} />
-            <Route path="/account" element={<Account />} />
-          </Routes>
+          <ErrorBoundary resetKey={loc.pathname}>
+            <Routes>
+              <Route path="/" element={<Overview />} />
+              <Route path="/large-files" element={<LargeFiles />} />
+              <Route path="/caches" element={<Caches />} />
+              <Route path="/duplicates" element={<Duplicates />} />
+              <Route path="/trash" element={<TrashPage />} />
+              <Route path="/ios-data" element={<IOSData />} />
+              <Route path="/apps" element={<Apps />} />
+              <Route path="/smart-clean" element={<SmartClean />} />
+              <Route path="/running" element={<Running />} />
+            </Routes>
+          </ErrorBoundary>
         </div>
       </main>
     </div>
@@ -81,66 +74,17 @@ function MainChrome() {
 }
 
 export default function App() {
-  const [license, setLicense] = useState<LicenseState | null>(null)
-
-  useEffect(() => {
-    if (!window.electronAPI) return
-    let cancelled = false
-    window.electronAPI.licenseStatus().then((s) => {
-      if (!cancelled) setLicense(s)
-    })
-    const unsub = window.electronAPI.onLicenseChanged(() => {
-      window.electronAPI.licenseStatus().then((s) => setLicense(s))
-    })
-    return () => {
-      cancelled = true
-      unsub?.()
-    }
-  }, [])
-
   if (!window.electronAPI) {
     return <NotInElectron />
   }
 
-  if (!license) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-[#1e1e1e] text-[13px] text-white/35">
-        Loading…
-      </div>
-    )
-  }
-
-  if (license.state === 'expired') {
-    return (
-      <Paywall
-        onLicensed={() => {
-          window.electronAPI.licenseStatus().then(setLicense)
-        }}
-      />
-    )
-  }
-
-  const isTrial = license.state === 'trial'
-  const showWelcomeModal = isTrial && license.showWelcome
-
   return (
-    <>
+    <ErrorBoundary>
       <HashRouter>
         <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#1e1e1e] text-[13px]">
-          {isTrial ? <TrialBanner daysLeft={license.daysLeft} /> : null}
           <MainChrome />
         </div>
       </HashRouter>
-      {showWelcomeModal ? (
-        <TrialWelcomeModal
-          daysLeft={license.daysLeft}
-          onDismiss={async () => {
-            const next = await window.electronAPI.dismissTrialWelcome()
-            setLicense(next)
-          }}
-          onBuy={() => window.electronAPI.openExternal(PRICING_URL)}
-        />
-      ) : null}
-    </>
+    </ErrorBoundary>
   )
 }
