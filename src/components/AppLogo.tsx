@@ -10,7 +10,7 @@ export function AppLogo({
 }) {
   return (
     <img
-      src="/logo.png"
+      src={`${import.meta.env.BASE_URL}logo.png`}
       alt=""
       width={size}
       height={size}
