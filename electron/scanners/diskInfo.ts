@@ -1,6 +1,5 @@
 import os from 'os'
-import fs from 'fs'
-import { run, getDirSizeAsync } from './utils'
+import { run, getDirBreakdown, getDirSizesAsync } from './utils'
 
 export interface DiskInfo {
   total: number
@@ -58,36 +57,32 @@ export async function getDiskInfo(): Promise<DiskInfo> {
   const home = os.homedir()
   const { total, used, free } = await getTotalAndFree()
 
-  // Scan all categories in parallel
-  const [
-    appSize,
-    userAppSize,
-    devSize,
-    docSize,
-    downloadsSize,
-    desktopSize,
-    photosLibSize,
-    picturesSize,
-    iCloudSize,
-    mailSize,
-    rawLibSize,
-    libDevSize,
-  ] = await Promise.all([
-    getDirSizeAsync('/Applications'),
-    getDirSizeAsync(`${home}/Applications`),
-    getDirSizeAsync(`${home}/Library/Developer`),
-    getDirSizeAsync(`${home}/Documents`),
-    getDirSizeAsync(`${home}/Downloads`),
-    getDirSizeAsync(`${home}/Desktop`),
-    fs.existsSync(`${home}/Pictures/Photos Library.photoslibrary`)
-      ? getDirSizeAsync(`${home}/Pictures/Photos Library.photoslibrary`)
-      : Promise.resolve(0),
-    getDirSizeAsync(`${home}/Pictures`),
-    getDirSizeAsync(`${home}/Library/Mobile Documents`),
-    getDirSizeAsync(`${home}/Library/Mail`),
-    getDirSizeAsync(`${home}/Library`),
-    getDirSizeAsync(`${home}/Library/Developer`),
+  // ~/Library and ~/Pictures are the expensive trees and several categories live
+  // inside them. One breakdown each gives the parent AND every child, so Library
+  // is walked once instead of four times and the Photos library once instead of twice.
+  // Every large tree gets the fan-out treatment — a single `du` on ~/Desktop alone
+  // measured 20.6s vs 11.8s split across its children.
+  const [lib, pics, desktop_, docs_, downloads_, appSizes] = await Promise.all([
+    getDirBreakdown(`${home}/Library`),
+    getDirBreakdown(`${home}/Pictures`),
+    getDirBreakdown(`${home}/Desktop`),
+    getDirBreakdown(`${home}/Documents`),
+    getDirBreakdown(`${home}/Downloads`),
+    getDirSizesAsync(['/Applications', `${home}/Applications`]),
   ])
+
+  const [appSize, userAppSize] = appSizes
+  const docSize       = docs_.total
+  const downloadsSize = downloads_.total
+  const desktopSize   = desktop_.total
+  const picturesSize  = pics.total
+  const photosLibSize = pics.children.get(`${home}/Pictures/Photos Library.photoslibrary`) ?? 0
+
+  const rawLibSize = lib.total
+  const devSize    = lib.children.get(`${home}/Library/Developer`) ?? 0
+  const mailSize   = lib.children.get(`${home}/Library/Mail`) ?? 0
+  const iCloudSize = lib.children.get(`${home}/Library/Mobile Documents`) ?? 0
+  const libDevSize = devSize
 
   const applications = appSize + userAppSize
   const developer    = devSize
@@ -104,16 +99,16 @@ export async function getDiskInfo(): Promise<DiskInfo> {
   const systemData = Math.max(0, used - knownTotal)
 
   const categories: DiskCategory[] = [
-    { name: 'System & Other',    size: systemData,   color: '#6b7280', path: '__system__' },
-    { name: 'Applications',      size: applications, color: '#4f8ef7', path: '/Applications' },
-    { name: 'Library & Caches',  size: library,      color: '#8b5cf6', path: `${home}/Library` },
-    { name: 'Developer',         size: developer,    color: '#06b6d4', path: `${home}/Library/Developer` },
-    { name: 'Documents',         size: documents,    color: '#10b981', path: `${home}/Documents` },
-    { name: 'Downloads',         size: downloads,    color: '#f59e0b', path: `${home}/Downloads` },
-    { name: 'Photos',            size: photos,       color: '#ec4899', path: `${home}/Pictures` },
-    { name: 'iCloud Drive',      size: iCloud,       color: '#60a5fa', path: `${home}/Library/Mobile Documents` },
-    { name: 'Mail',              size: mail,         color: '#f97316', path: `${home}/Library/Mail` },
-    { name: 'Desktop',           size: desktop,      color: '#a78bfa', path: `${home}/Desktop` },
+    { name: 'System & Other',    size: systemData,   color: 'rgb(var(--fg) / 0.22)', path: '__system__' },
+    { name: 'Applications',      size: applications, color: 'rgb(var(--fg) / 0.92)', path: '/Applications' },
+    { name: 'Library & Caches',  size: library,      color: 'rgb(var(--fg) / 0.74)', path: `${home}/Library` },
+    { name: 'Developer',         size: developer,    color: 'rgb(var(--fg) / 0.58)', path: `${home}/Library/Developer` },
+    { name: 'Documents',         size: documents,    color: 'rgb(var(--fg) / 0.44)', path: `${home}/Documents` },
+    { name: 'Downloads',         size: downloads,    color: 'rgb(var(--fg) / 0.32)', path: `${home}/Downloads` },
+    { name: 'Photos',            size: photos,       color: 'rgb(var(--fg) / 0.5)', path: `${home}/Pictures` },
+    { name: 'iCloud Drive',      size: iCloud,       color: 'rgb(var(--fg) / 0.38)', path: `${home}/Library/Mobile Documents` },
+    { name: 'Mail',              size: mail,         color: 'rgb(var(--fg) / 0.26)', path: `${home}/Library/Mail` },
+    { name: 'Desktop',           size: desktop,      color: 'rgb(var(--fg) / 0.66)', path: `${home}/Desktop` },
   ].filter(c => c.size > 1024 * 1024)
 
   return {

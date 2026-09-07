@@ -31,11 +31,11 @@ export default function Duplicates() {
   const [modal, setModal] = useState<{ open: boolean; permanent: boolean }>({ open: false, permanent: false })
   const [deleteSuccess, setDeleteSuccess] = useState<{ open: boolean; summary?: string }>({ open: false })
 
-  async function scan() {
+  async function scan(force = false) {
     setLoading(true)
     setSelectedFiles(new Set())
     try {
-      const result = await window.electronAPI.getDuplicates()
+      const result = await window.electronAPI.getDuplicates(force)
       setGroups(result || [])
       // Expand first 3 groups by default
       if (result?.length) {
@@ -155,7 +155,7 @@ export default function Duplicates() {
             Auto-select duplicates
           </button>
         )}
-        <ScanButton onClick={scan} loading={loading} label="Find Duplicates" />
+        <ScanButton onClick={() => scan(true)} loading={loading} label="Find Duplicates" />
       </PageHeader>
 
       <InfoBanner id="duplicates" title="How duplicates are found">
@@ -179,7 +179,7 @@ export default function Duplicates() {
           </button>
           <button
             onClick={() => setModal({ open: true, permanent: true })}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-destructive text-xs"
           >
             Delete Permanently
           </button>
@@ -221,8 +221,8 @@ export default function Duplicates() {
                     <span className="text-xs text-white/30 ml-2">{group.files[0]?.name}</span>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-xs text-white/40">Each: {formatBytes(group.size)}</div>
-                    <div className="text-xs text-red-400 font-medium">Wasted: {formatBytes(group.totalWasted)}</div>
+                    <div className="text-xs text-white/40">Each: {formatBytes(group.size, 2)}</div>
+                    <div className="text-xs text-red-400 font-medium">Wasted: {formatBytes(group.totalWasted, 2)}</div>
                   </div>
                 </div>
 
@@ -247,7 +247,7 @@ export default function Duplicates() {
                         >
                           {selectedFiles.has(file.path) && (
                             <svg viewBox="0 0 10 8" className="w-2.5 h-2.5">
-                              <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M1 4l2.5 2.5L9 1" stroke="rgb(var(--bg))" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                           )}
                         </div>

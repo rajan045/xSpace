@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import { getDirSizeAsync, run } from './utils'
+import { diskBytes, getDirSizeAsync, run } from './utils'
 
 export interface FileOpResult {
   success: boolean
@@ -13,7 +13,9 @@ export interface FileOpResult {
 async function getSize(p: string): Promise<number> {
   try {
     const stat = fs.statSync(p)
-    if (stat.isFile()) return stat.size
+    // diskBytes for files, du -sk for dirs — both report allocated blocks, so a
+    // sparse file never inflates freedBytes.
+    if (stat.isFile()) return diskBytes(stat)
     return getDirSizeAsync(p)
   } catch {
     return 0

@@ -14,7 +14,10 @@
     "website:setup": "bash scripts/create-download-website.sh",
     "website:dev": "cd website && npm run dev",
     "website:build": "cd website && npm run build",
-    "website:start": "cd website && npm run start"
+    "website:start": "cd website && npm run start",
+    "test:scanners": "tsc -p tsconfig.node.json && node scripts/check-scanners.mjs",
+    "test:palette": "node scripts/check-palette.mjs",
+    "test:cache": "node scripts/check-scan-cache.mjs"
   },
   "keywords": [],
   "author": "xSpace",

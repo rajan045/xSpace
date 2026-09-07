@@ -69,7 +69,7 @@ async function refreshSession(): Promise<boolean> {
   }
 }
 
-async function ensureAccess(): Promise<string | null> {
+export async function ensureAccess(): Promise<string | null> {
   const access = store.get("accessToken");
   if (access && !accessNeedsRefresh(access)) return access;
   if (await refreshSession()) return store.get("accessToken");
@@ -111,10 +111,10 @@ export function logout(): AuthStatus {
 }
 
 const SUCCESS_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>Signed in</title>
-<style>body{font-family:-apple-system,system-ui,sans-serif;background:#0a0a0b;color:#fff;display:flex;height:100vh;margin:0;align-items:center;justify-content:center}
-.box{text-align:center}.c{width:56px;height:56px;border-radius:16px;background:rgba(48,209,88,.15);border:1px solid rgba(48,209,88,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#30d158;font-size:28px}</style></head>
+<style>body{font-family:-apple-system,system-ui,sans-serif;background:#0B1120;color:#fff;display:flex;height:100vh;margin:0;align-items:center;justify-content:center}
+.box{text-align:center}.c{width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#ffffff;font-size:28px}</style></head>
 <body><div class="box"><div class="c">✓</div><h1 style="font-size:18px">You're signed in</h1>
-<p style="color:#888;font-size:14px">Return to the xSpace app — you can close this tab.</p></div></body></html>`;
+<p style="color:rgba(255,255,255,.55);font-size:14px">Return to the xSpace app — you can close this tab.</p></div></body></html>`;
 
 let activeServer: http.Server | null = null;
 

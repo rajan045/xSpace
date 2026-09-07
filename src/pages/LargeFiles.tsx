@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Trash2, FileSearch } from 'lucide-react'
 import FileCard, { type RiskLevel } from '../components/FileCard'
 import PageHeader from '../components/PageHeader'
@@ -8,6 +8,7 @@ import EmptyState from '../components/EmptyState'
 import ConfirmModal from '../components/ConfirmModal'
 import DeleteSuccessModal from '../components/DeleteSuccessModal'
 import InfoBanner from '../components/InfoBanner'
+import ListToolbar, { type SortKey } from '../components/ListToolbar'
 import { formatBytes } from '../utils/format'
 
 interface LargeFile {
@@ -48,14 +49,17 @@ export default function LargeFiles() {
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [minSizeMB, setMinSizeMB] = useState(50)
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<SortKey>('size')
+  const lastClicked = useRef<number | null>(null)
   const [modal, setModal] = useState<{ open: boolean; permanent: boolean }>({ open: false, permanent: false })
   const [deleteSuccess, setDeleteSuccess] = useState<{ open: boolean; summary?: string }>({ open: false })
 
-  async function scan() {
+  async function scan(force = false) {
     setLoading(true)
     setSelected(new Set())
     try {
-      const result = await window.electronAPI.getLargeFiles(50)
+      const result = await window.electronAPI.getLargeFiles(50, force)
       setAllFiles(result || [])
     } finally {
       setLoading(false)
@@ -64,18 +68,56 @@ export default function LargeFiles() {
 
   useEffect(() => { scan() }, [])
 
-  const files = allFiles.filter(f => f.size >= minSizeMB * 1024 * 1024)
+  const files = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    const list = allFiles.filter(f =>
+      f.size >= minSizeMB * 1024 * 1024 &&
+      (!q || f.name.toLowerCase().includes(q) || f.path.toLowerCase().includes(q))
+    )
+    return list.sort((a, b) => {
+      if (sort === 'name') return a.name.localeCompare(b.name)
+      if (sort === 'modified') return (b.modified || '').localeCompare(a.modified || '')
+      return b.size - a.size
+    })
+  }, [allFiles, minSizeMB, query, sort])
 
-  function toggleSelect(path: string) {
+  /** Shift-click selects the range from the last clicked row. */
+  function toggleSelect(path: string, index: number, shiftKey: boolean) {
     setSelected(prev => {
       const next = new Set(prev)
-      next.has(path) ? next.delete(path) : next.add(path)
+      if (shiftKey && lastClicked.current !== null) {
+        const [from, to] = [lastClicked.current, index].sort((a, b) => a - b)
+        const selecting = !next.has(path)
+        for (let i = from; i <= to; i++) {
+          const p = files[i]?.path
+          if (!p) continue
+          selecting ? next.add(p) : next.delete(p)
+        }
+      } else {
+        next.has(path) ? next.delete(path) : next.add(path)
+      }
       return next
     })
+    lastClicked.current = index
   }
 
   function selectAll() { setSelected(new Set(files.map(f => f.path))) }
   function clearSelection() { setSelected(new Set()) }
+
+  // ⌘A selects everything currently visible; Esc clears the selection.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const typing = (e.target as HTMLElement)?.tagName === 'INPUT'
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a' && !typing) {
+        e.preventDefault()
+        setSelected(new Set(files.map(f => f.path)))
+      } else if (e.key === 'Escape' && !typing) {
+        setSelected(new Set())
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [files])
 
   const selectedFiles = allFiles.filter(f => selected.has(f.path))
   const totalSelectedSize = selectedFiles.reduce((sum, f) => sum + f.size, 0)
@@ -142,7 +184,7 @@ export default function LargeFiles() {
             </button>
           ))}
         </div>
-        <ScanButton onClick={scan} loading={loading} />
+        <ScanButton onClick={() => scan(true)} loading={loading} />
       </PageHeader>
 
       <InfoBanner id="large-files" title="How to use Large Files">
@@ -151,8 +193,10 @@ export default function LargeFiles() {
         always safer — you can undo it. <strong className="text-white/60">Delete Permanently</strong> cannot be undone.
       </InfoBanner>
 
+      <ListToolbar query={query} onQuery={setQuery} sort={sort} onSort={setSort} />
+
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2.5 bg-accent-blue/10 border border-accent-blue/20 rounded-lg mb-4 shrink-0">
+        <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-2.5 bg-accent-blue/10 border border-accent-blue/20 rounded-lg mb-4 shrink-0 backdrop-blur">
           <span className="text-sm text-accent-blue flex-1">
             {selected.size} selected · {formatBytes(totalSelectedSize)}
           </span>
@@ -166,7 +210,7 @@ export default function LargeFiles() {
           </button>
           <button
             onClick={() => setModal({ open: true, permanent: true })}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-destructive text-xs"
           >
             Delete Permanently
           </button>
@@ -180,10 +224,12 @@ export default function LargeFiles() {
           <EmptyState
             icon={<FileSearch size={24} className="text-accent-green" />}
             title="No large files found"
-            subtitle={`No files larger than ${minSizeMB}MB in your home directory`}
+            subtitle={query
+              ? `Nothing matches "${query}" above ${minSizeMB}MB`
+              : `No files larger than ${minSizeMB}MB in your home directory`}
           />
         ) : (
-          files.map(file => {
+          files.map((file, i) => {
             const { riskLevel, impact } = getFileContext(file)
             return (
               <FileCard
@@ -196,7 +242,7 @@ export default function LargeFiles() {
                 riskLevel={riskLevel}
                 impact={impact}
                 selected={selected.has(file.path)}
-                onSelect={() => toggleSelect(file.path)}
+                onSelect={(_, e) => toggleSelect(file.path, i, Boolean(e?.shiftKey))}
                 onShowInFinder={() => window.electronAPI.showInFinder(file.path)}
               />
             )

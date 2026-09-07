@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -10,9 +10,19 @@ import {
   ShieldCheck,
   Activity,
   AppWindow,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import AccountButton from './AccountButton'
+import { applyTheme, getTheme, nextTheme, type Theme } from '../theme'
+
+const THEME_META: Record<Theme, { icon: React.ReactNode; label: string }> = {
+  dark: { icon: <Moon size={13} />, label: 'Dark' },
+  light: { icon: <Sun size={13} />, label: 'Light' },
+  system: { icon: <Monitor size={13} />, label: 'System' },
+}
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Overview', exact: true },
@@ -26,15 +36,23 @@ const navItems = [
 ]
 
 export default function Sidebar() {
+  const [theme, setTheme] = useState<Theme>(getTheme)
+
+  function cycleTheme() {
+    const next = nextTheme(theme)
+    applyTheme(next)
+    setTheme(next)
+  }
+
   return (
-    <aside className="flex flex-col w-[200px] shrink-0 h-full bg-[#252526]">
+    <aside className="flex flex-col w-[208px] shrink-0 h-full bg-mac-sidebar border-r border-white/[0.07]">
       {/* Title bar spacer — aligns with traffic lights */}
       <div className="drag-region h-[52px] shrink-0 border-b border-mac-separator" />
 
       <div className="no-drag flex flex-col flex-1 min-h-0 pt-3 pb-2">
         {/* App identity — Finder / Settings style */}
         <div className="px-3 pb-3 flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-mac-sm bg-[#1e1e1e] border border-white/[0.08] flex items-center justify-center shadow-mac-sm overflow-hidden p-0.5">
+          <div className="w-9 h-9 rounded-mac-sm bg-mac-window border border-white/[0.08] flex items-center justify-center shadow-mac-sm overflow-hidden p-0.5">
             <AppLogo size={34} className="rounded-[6px]" />
           </div>
           <div className="min-w-0">
@@ -50,8 +68,8 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-2 px-2.5 py-2 rounded-mac-sm text-[13px] font-medium transition-all duration-150 border outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
                 isActive
-                  ? 'bg-accent-green text-white border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.12)_inset]'
-                  : 'bg-accent-green/85 text-white border-transparent hover:bg-accent-green hover:border-white/10'
+                  ? 'bg-accent-green text-mac-window border-transparent'
+                  : 'bg-accent-green/90 text-mac-window border-transparent hover:bg-accent-green'
               }`
             }
           >
@@ -89,9 +107,23 @@ export default function Sidebar() {
         </nav>
 
         <div className="px-2 pt-2 mt-auto border-t border-mac-separator space-y-2">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={cycleTheme}
+              title={`Appearance: ${THEME_META[theme].label} — click to change`}
+              className="flex-1 flex items-center gap-1.5 px-2 py-1.5 rounded-mac-sm text-[12px] text-white/60 bg-white/[0.04] border border-white/[0.08] hover:text-white/90 hover:bg-white/[0.08] transition-colors mac-focus"
+            >
+              {THEME_META[theme].icon}
+              <span className="truncate">{THEME_META[theme].label}</span>
+            </button>
+            <span className="flex items-center gap-0.5 px-1.5 py-1.5 text-[11px] text-white/30 select-none" title="Command palette">
+              <kbd>⌘</kbd><kbd>K</kbd>
+            </span>
+          </div>
           <AccountButton />
-          <p className="text-[10px] text-white/25 text-center leading-snug px-1">
-            Trash is reversible · Review before permanent delete
+          <p className="text-[10px] text-white/25 text-center px-1 pb-1">
+            Trash is reversible
           </p>
         </div>
       </div>

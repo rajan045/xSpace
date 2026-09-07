@@ -7,7 +7,7 @@ import EmptyState from '../components/EmptyState'
 import ConfirmModal from '../components/ConfirmModal'
 import DeleteSuccessModal from '../components/DeleteSuccessModal'
 import InfoBanner from '../components/InfoBanner'
-import { formatBytes, formatDate, formatPath } from '../utils/format'
+import { formatBytes, formatDate, formatPath, tone } from '../utils/format'
 
 interface SimulatorDevice {
   udid: string
@@ -47,12 +47,12 @@ export default function IOSData() {
     open: false,
   })
 
-  async function scan() {
+  async function scan(force = false) {
     setLoading(true)
     setSelectedSims(new Set())
     setSelectedDerived(new Set())
     try {
-      const data = await window.electronAPI.getIOSData()
+      const data = await window.electronAPI.getIOSData(force)
       setInfo(data)
     } finally {
       setLoading(false)
@@ -188,7 +188,7 @@ export default function IOSData() {
         subtitle="Simulator data, derived data, and Xcode artifacts"
         totalSize={totalSize}
       >
-        <ScanButton onClick={scan} loading={loading} />
+        <ScanButton onClick={() => scan(true)} loading={loading} />
       </PageHeader>
 
       <InfoBanner id="ios-xcode" title="What is Xcode data?">
@@ -228,7 +228,7 @@ export default function IOSData() {
                   label="iOS Simulators"
                   size={info.totalSimulatorSize}
                   description={`${info.simulators.length} simulator devices`}
-                  color="#06b6d4"
+                  color={tone(0.85)}
                   onClean={info.simulators.length > 0 ? () => {
                     setSelectedSims(new Set(info.simulators.map(s => s.udid)))
                     setTab('simulators')
@@ -238,7 +238,7 @@ export default function IOSData() {
                   label="Xcode Derived Data"
                   size={info.totalDerivedDataSize}
                   description={`${info.derivedData.length} projects`}
-                  color="#8b5cf6"
+                  color={tone(0.68)}
                   onClean={info.derivedData.length > 0 ? () => {
                     setSelectedDerived(new Set(info.derivedData.map(d => d.path)))
                     setTab('derived')
@@ -248,13 +248,13 @@ export default function IOSData() {
                   label="Xcode Archives"
                   size={info.xcodeArchivesSize}
                   description="Old app archives (review before deleting)"
-                  color="#f59e0b"
+                  color={tone(0.52)}
                 />
                 <SummaryCard
                   label="iOS Device Backups"
                   size={info.iosDeviceBackupsSize}
                   description="iPhone/iPad backups (review before deleting)"
-                  color="#ef4444"
+                  color={tone(0.4)}
                 />
                 {totalSize === 0 && (
                   <EmptyState
@@ -277,7 +277,7 @@ export default function IOSData() {
                     <button onClick={() => setSelectedSims(new Set())} className="text-xs text-white/40">Clear</button>
                     <button
                       onClick={() => setModal({ open: true, type: 'sims' })}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-destructive text-xs"
                     >
                       <Trash2 size={12} /> Delete Selected
                     </button>
@@ -301,7 +301,7 @@ export default function IOSData() {
                       }`}>
                         {selectedSims.has(sim.udid) && (
                           <svg viewBox="0 0 10 8" className="w-2.5 h-2.5">
-                            <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M1 4l2.5 2.5L9 1" stroke="rgb(var(--bg))" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         )}
                       </div>
@@ -335,7 +335,7 @@ export default function IOSData() {
                     <button onClick={() => setSelectedDerived(new Set())} className="text-xs text-white/40">Clear</button>
                     <button
                       onClick={() => setModal({ open: true, type: 'derived' })}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-destructive text-xs"
                     >
                       <Trash2 size={12} /> Delete Selected
                     </button>
@@ -359,7 +359,7 @@ export default function IOSData() {
                       }`}>
                         {selectedDerived.has(entry.path) && (
                           <svg viewBox="0 0 10 8" className="w-2.5 h-2.5">
-                            <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M1 4l2.5 2.5L9 1" stroke="rgb(var(--bg))" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         )}
                       </div>
@@ -372,7 +372,7 @@ export default function IOSData() {
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-green/12 text-accent-green shrink-0 font-medium">Auto-rebuild</span>
                         </div>
                         <div className="text-xs text-white/30 truncate">{formatPath(entry.path)}</div>
-                        <div className="text-xs mt-0.5" style={{ color: '#10b98170' }}>↪ Xcode rebuilds this on next build — no data loss</div>
+                        <div className="text-xs mt-0.5" style={{ color: tone(0.45) }}>↪ Xcode rebuilds this on next build — no data loss</div>
                       </div>
                       <div className="text-sm font-semibold text-white/70 shrink-0">{formatBytes(entry.size)}</div>
                       <button
@@ -442,7 +442,7 @@ function SummaryCard({
       {onClean && size > 0 && (
         <button
           onClick={onClean}
-          className="px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 text-xs font-medium hover:bg-red-500/25 transition-all border border-red-500/20"
+          className="px-3 py-1.5 rounded-lg btn-destructive text-xs"
         >
           Clean
         </button>

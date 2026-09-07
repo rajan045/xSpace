@@ -42,12 +42,12 @@ export default function Caches() {
   // Expand state: cacheId → DirEntry[] | 'loading' | null
   const [expanded, setExpanded] = useState<Record<string, DirEntry[] | 'loading'>>({})
 
-  async function scan() {
+  async function scan(force = false) {
     setLoading(true)
     setSelected(new Set())
     setExpanded({})
     try {
-      const result = await window.electronAPI.getCacheInfo()
+      const result = await window.electronAPI.getCacheInfo(force)
       setCaches(result || [])
     } finally {
       setLoading(false)
@@ -142,7 +142,7 @@ export default function Caches() {
         totalSize={allTotal}
         itemCount={caches.length}
       >
-        <ScanButton onClick={scan} loading={loading} />
+        <ScanButton onClick={() => scan(true)} loading={loading} />
       </PageHeader>
 
       <InfoBanner id="caches" title="What are caches?">
@@ -179,7 +179,7 @@ export default function Caches() {
           </span>
           <button
             onClick={() => setModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-destructive text-xs"
           >
             <Trash2 size={12} /> Clean Selected
           </button>
@@ -216,8 +216,8 @@ export default function Caches() {
                     }`}
                   >
                     {selected.has(cache.id) && (
-                      <svg viewBox="0 0 10 8" className="w-2.5 h-2.5 fill-white">
-                        <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                      <svg viewBox="0 0 10 8" className="w-2.5 h-2.5">
+                        <path d="M1 4l2.5 2.5L9 1" stroke="rgb(var(--bg))" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     )}
                   </div>

@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   HardDrive, RefreshCw, Zap, ChevronRight,
   Folder, FileText, ExternalLink, Loader2,
   ShieldAlert, ShieldCheck, Info,
 } from 'lucide-react'
-import { formatBytes, formatDate, formatPath, getExtColor } from '../utils/format'
+import { formatBytes, formatDate, formatPath, getExtColor, toneFill } from '../utils/format'
 import ConfirmModal from '../components/ConfirmModal'
 import DeleteSuccessModal from '../components/DeleteSuccessModal'
 import CategoryInfoTooltip from '../components/CategoryInfoTooltip'
@@ -63,10 +63,10 @@ export default function Overview() {
   const [modal, setModal] = useState<{ open: boolean; permanent: boolean }>({ open: false, permanent: false })
   const [deleteSuccess, setDeleteSuccess] = useState<{ open: boolean; summary?: string }>({ open: false })
 
-  async function scan() {
+  async function scan(force = false) {
     setLoading(true)
     try {
-      const info = await window.electronAPI.getDiskInfo()
+      const info = await window.electronAPI.getDiskInfo(force)
       setDisk(info)
       setScanned(true)
     } catch (err) {
@@ -75,6 +75,9 @@ export default function Overview() {
       setLoading(false)
     }
   }
+
+  // Scan on first open — the blank "press scan" screen was a dead end.
+  useEffect(() => { scan() }, [])
 
   async function openCategory(cat: DiskCategory) {
     setDrillCat(cat)
@@ -241,7 +244,7 @@ export default function Overview() {
         </p>
         <button
           type="button"
-          onClick={scan}
+          onClick={() => scan(true)}
           disabled={loading}
           className="mac-btn-primary flex items-center gap-2.5 px-5 py-2.5 text-[15px] disabled:opacity-45 disabled:cursor-not-allowed"
         >
@@ -269,7 +272,7 @@ export default function Overview() {
         </div>
         <button
           type="button"
-          onClick={scan}
+          onClick={() => scan(true)}
           disabled={loading}
           className="mac-btn-primary flex items-center gap-2 disabled:opacity-45"
         >
@@ -289,10 +292,13 @@ export default function Overview() {
             (macOS, system caches, snapshots), so it reads higher than the “System Data” in Settings.
           </InfoBanner>
 
-          <div className="grid grid-cols-3 gap-3 mb-5 shrink-0">
-            <StatCard label="Total Storage" value={formatBytes(disk.total)} color="text-white" bg="bg-dark-800" />
-            <StatCard label="Used" value={formatBytes(disk.used)} sub={`${disk.usedPercent}% of total`} color="text-accent-blue" bg="bg-accent-blue/5" />
-            <StatCard label="Available" value={formatBytes(disk.free)} sub={`${disk.freePercent}% of total`} color="text-accent-green" bg="bg-accent-green/5" />
+          <div className="flex gap-3 mb-5 shrink-0 items-stretch">
+            <DiskRing usedPercent={disk.usedPercent} free={formatBytes(disk.free)} />
+            <div className="grid grid-cols-3 gap-3 flex-1">
+              <StatCard label="Total Storage" value={formatBytes(disk.total)} color="text-white" bg="bg-dark-800" />
+              <StatCard label="Used" value={formatBytes(disk.used)} sub={`${disk.usedPercent}% of total`} color="text-accent-blue" bg="bg-dark-800" />
+              <StatCard label="Available" value={formatBytes(disk.free)} sub={`${disk.freePercent}% of total`} color="text-white/70" bg="bg-dark-800" />
+            </div>
           </div>
 
           <div className="mac-panel p-4 mb-5 shrink-0">
@@ -517,7 +523,7 @@ export default function Overview() {
                                 >
                                   <div
                                     className="w-8 h-8 rounded-mac-sm flex items-center justify-center shrink-0"
-                                    style={{ backgroundColor: `${drillCat.color}20` }}
+                                    style={{ backgroundColor: toneFill(0.08) }}
                                   >
                                     {entry.safeToDelete
                                       ? <ShieldCheck size={14} className="text-accent-green" />
@@ -592,13 +598,13 @@ export default function Overview() {
                                 >
                                   {isSelected && (
                                     <svg viewBox="0 0 10 8" className="w-2 h-2">
-                                      <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                      <path d="M1 4l2.5 2.5L9 1" stroke="rgb(var(--bg))" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                                     </svg>
                                   )}
                                 </div>
                                 <div
                                   className="w-7 h-7 rounded-mac-sm flex items-center justify-center shrink-0"
-                                  style={{ backgroundColor: `${color}22` }}
+                                  style={{ backgroundColor: toneFill(0.08) }}
                                 >
                                   {entry.isDir
                                     ? <Folder size={13} style={{ color }} />
@@ -686,6 +692,34 @@ function StatCard({ label, value, sub, color, bg }: {
       <div className="text-[11px] text-white/40 font-medium uppercase tracking-wide mb-0.5">{label}</div>
       <div className={`text-lg font-semibold tabular-nums ${color}`}>{value}</div>
       {sub && <div className="text-[11px] text-white/35 mt-0.5">{sub}</div>}
+    </div>
+  )
+}
+
+/** Compact donut — used share of the disk, drawn with the single accent tone. */
+function DiskRing({ usedPercent, free }: { usedPercent: number; free: string }) {
+  const r = 34
+  const c = 2 * Math.PI * r
+  const pct = Math.min(100, Math.max(0, usedPercent))
+
+  return (
+    <div className="mac-panel px-4 py-3 flex items-center gap-3.5 shrink-0">
+      <svg width="84" height="84" viewBox="0 0 84 84" className="shrink-0 -rotate-90">
+        <circle cx="42" cy="42" r={r} fill="none" stroke="rgb(var(--fg) / 0.10)" strokeWidth="9" />
+        <circle
+          cx="42" cy="42" r={r} fill="none"
+          stroke="rgb(var(--fg) / 0.85)"
+          strokeWidth="9"
+          strokeLinecap="round"
+          strokeDasharray={`${(pct / 100) * c} ${c}`}
+          style={{ transition: 'stroke-dasharray 0.7s ease' }}
+        />
+      </svg>
+      <div className="min-w-0">
+        <div className="text-[24px] font-semibold text-white tabular-nums leading-none">{pct}%</div>
+        <div className="text-[11px] text-white/40 uppercase tracking-wide mt-1">Disk used</div>
+        <div className="text-[12px] text-white/55 mt-1.5 whitespace-nowrap">{free} free</div>
+      </div>
     </div>
   )
 }

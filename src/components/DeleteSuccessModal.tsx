@@ -29,7 +29,7 @@ export default function DeleteSuccessModal({
         role="dialog"
         aria-modal
         aria-labelledby="delete-success-title"
-        className="relative z-10 w-full max-w-[400px] flex flex-col bg-[#323234] border border-white/[0.1] rounded-mac shadow-mac fade-in"
+        className="relative z-10 w-full max-w-[400px] flex flex-col bg-mac-panel border border-white/[0.1] rounded-mac shadow-mac fade-in"
       >
         <div className="p-5">
           <div className="flex items-start gap-3 mb-3">

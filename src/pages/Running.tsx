@@ -299,7 +299,7 @@ export default function Running() {
 
       {loading &&
       (processes.length > 0 || protectedProcesses.length > 0 || launchAgents.length > 0) ? (
-        <div className="fixed bottom-6 right-6 flex items-center gap-2 rounded-mac-sm bg-[#323234] border border-white/10 px-3 py-2 text-[12px] text-white/55 shadow-mac">
+        <div className="fixed bottom-6 right-6 flex items-center gap-2 rounded-mac-sm bg-mac-panel border border-white/10 px-3 py-2 text-[12px] text-white/55 shadow-mac">
           <Loader2 size={14} className="animate-spin text-accent-blue" />
           Refreshing…
         </div>
@@ -318,7 +318,7 @@ export default function Running() {
             onClick={() => setInfoOpen(false)}
             aria-label="Close"
           />
-          <div className="relative z-10 max-h-[min(560px,85vh)] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/[0.1] bg-[#2a2a2c] p-6 shadow-mac-lg">
+          <div className="relative z-10 max-h-[min(560px,85vh)] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/[0.1] bg-mac-raised p-6 shadow-mac-lg">
             <div className="flex items-start justify-between gap-3">
               <h2 id="running-info-title" className="text-[16px] font-semibold text-white/95">
                 Running &amp; startup

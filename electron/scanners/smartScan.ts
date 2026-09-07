@@ -1,7 +1,7 @@
 import os from 'os'
 import fs from 'fs'
 import path from 'path'
-import { getDirSizeAsync, run } from './utils'
+import { getDirSizeAsync, getDirSizesAsync, run } from './utils'
 import { scanNodeModules } from './nodeModulesScan'
 
 export interface SafeItem {
@@ -122,26 +122,25 @@ async function scanChromeCacheOnly(): Promise<SafeItem[]> {
   }
 
   const ALLOWED_SUBFOLDERS = ['Cache', 'Code Cache', 'GPUCache'] as const
-  const results: SafeItem[] = []
 
-  for (const profile of profileNames) {
-    for (const sub of ALLOWED_SUBFOLDERS) {
-      const fullPath = path.join(chromeBase, profile, sub)
-      if (!fs.existsSync(fullPath)) continue
-      const size = await getDirSizeAsync(fullPath)
-      if (size < 1024 * 1024) continue
-      results.push({
-        id: `chrome-cache-${safeIdPart(profile)}-${safeIdPart(sub)}`,
-        label: `Chrome Cache (${profile})`,
-        reason: `Cache files only (${sub}) — does not remove history, cookies, saved logins, or extensions`,
-        path: fullPath,
-        size,
-        category: 'cache',
-      })
-    }
-  }
+  const targets = profileNames.flatMap(profile =>
+    ALLOWED_SUBFOLDERS.map(sub => ({ profile, sub, fullPath: path.join(chromeBase, profile, sub) }))
+  ).filter(t => fs.existsSync(t.fullPath))
 
-  return results
+  const sizes = await getDirSizesAsync(targets.map(t => t.fullPath))
+
+  return targets.flatMap((t, i) => {
+    const size = sizes[i]
+    if (size < 1024 * 1024) return []
+    return [{
+      id: `chrome-cache-${safeIdPart(t.profile)}-${safeIdPart(t.sub)}`,
+      label: `Chrome Cache (${t.profile})`,
+      reason: `Cache files only (${t.sub}) — does not remove history, cookies, saved logins, or extensions`,
+      path: t.fullPath,
+      size,
+      category: 'cache' as const,
+    }]
+  })
 }
 
 // ── Build artifact paths ──────────────────────────────────────────────────────
@@ -158,34 +157,31 @@ const SAFE_BUILD_ITEMS: Array<{ id: string; label: string; reason: string; rel: 
 // ── Scanner helpers ───────────────────────────────────────────────────────────
 
 async function scanCaches(): Promise<SafeItem[]> {
-  const items = await Promise.all(
-    SAFE_CACHE_ITEMS.map(async item => {
-      const fullPath = path.join(HOME, item.rel)
-      if (!fs.existsSync(fullPath)) return null
-      const size = await getDirSizeAsync(fullPath)
-      if (size < 1024 * 1024) return null // skip anything < 1 MB
-      const result: SafeItem = { id: item.id, label: item.label, reason: item.reason, path: fullPath, size, category: 'cache' }
-      return result
-    })
-  )
+  const present = SAFE_CACHE_ITEMS
+    .map(item => ({ ...item, fullPath: path.join(HOME, item.rel) }))
+    .filter(item => fs.existsSync(item.fullPath))
 
-  const base = items.filter((i): i is SafeItem => i !== null)
+  const sizes = await getDirSizesAsync(present.map(i => i.fullPath))
+  const base: SafeItem[] = present.flatMap((item, i) => {
+    const size = sizes[i]
+    if (size < 1024 * 1024) return [] // skip anything < 1 MB
+    return [{ id: item.id, label: item.label, reason: item.reason, path: item.fullPath, size, category: 'cache' as const }]
+  })
   const [chrome, safari] = await Promise.all([scanChromeCacheOnly(), scanSafariCacheOnly()])
   return [...base, ...chrome, ...safari]
 }
 
 async function scanBuildArtifacts(): Promise<SafeItem[]> {
-  const items = await Promise.all(
-    SAFE_BUILD_ITEMS.map(async item => {
-      const fullPath = path.join(HOME, item.rel)
-      if (!fs.existsSync(fullPath)) return null
-      const size = await getDirSizeAsync(fullPath)
-      if (size < 1024 * 1024) return null
-      const result: SafeItem = { id: item.id, label: item.label, reason: item.reason, path: fullPath, size, category: 'build' }
-      return result
-    })
-  )
-  return items.filter((i): i is SafeItem => i !== null)
+  const present = SAFE_BUILD_ITEMS
+    .map(item => ({ ...item, fullPath: path.join(HOME, item.rel) }))
+    .filter(item => fs.existsSync(item.fullPath))
+
+  const sizes = await getDirSizesAsync(present.map(i => i.fullPath))
+  return present.flatMap((item, i) => {
+    const size = sizes[i]
+    if (size < 1024 * 1024) return []
+    return [{ id: item.id, label: item.label, reason: item.reason, path: item.fullPath, size, category: 'build' as const }]
+  })
 }
 
 async function scanSimulators(): Promise<SafeItem[]> {
@@ -197,29 +193,33 @@ async function scanSimulators(): Promise<SafeItem[]> {
     if (!rawJson) return []
 
     const data = JSON.parse(rawJson)
-    const results: SafeItem[] = []
 
-    for (const [runtime, deviceList] of Object.entries(data.devices as Record<string, any[]>)) {
-      for (const device of deviceList) {
-        if (device.state === 'Booted') continue // never delete a running simulator
-        const devicePath = path.join(simulatorsBase, device.udid)
-        if (!fs.existsSync(devicePath)) continue
-        const size = await getDirSizeAsync(devicePath)
-        if (size < 1024 * 1024) continue
-        const runtimeLabel = runtime
-          .replace('com.apple.CoreSimulator.SimRuntime.', '')
-          .replace(/-/g, ' ')
-        results.push({
-          id: `sim-${device.udid}`,
-          label: `${device.name} (${runtimeLabel})`,
-          reason: 'Simulator not running — reinstallable from Xcode',
-          path: devicePath,
-          size,
-          category: 'simulator',
-        })
-      }
-    }
-    return results
+    const devices = Object.entries(data.devices as Record<string, any[]>)
+      .flatMap(([runtime, deviceList]) => deviceList
+        .filter(device => device.state !== 'Booted') // never delete a running simulator
+        .map(device => ({
+          device,
+          devicePath: path.join(simulatorsBase, device.udid),
+          runtimeLabel: runtime
+            .replace('com.apple.CoreSimulator.SimRuntime.', '')
+            .replace(/-/g, ' '),
+        })))
+      .filter(d => fs.existsSync(d.devicePath))
+
+    const sizes = await getDirSizesAsync(devices.map(d => d.devicePath))
+
+    return devices.flatMap((d, i) => {
+      const size = sizes[i]
+      if (size < 1024 * 1024) return []
+      return [{
+        id: `sim-${d.device.udid}`,
+        label: `${d.device.name} (${d.runtimeLabel})`,
+        reason: 'Simulator not running — reinstallable from Xcode',
+        path: d.devicePath,
+        size,
+        category: 'simulator' as const,
+      }]
+    })
   } catch {
     return []
   }

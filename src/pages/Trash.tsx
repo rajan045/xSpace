@@ -90,7 +90,7 @@ export default function TrashPage() {
           <button
             onClick={() => setModal(true)}
             disabled={emptying}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium text-sm transition-all border border-red-500/30 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg btn-destructive text-sm disabled:opacity-50"
           >
             <Trash2 size={14} className={emptying ? 'animate-bounce' : ''} />
             {emptying ? 'Emptying...' : 'Empty Trash'}

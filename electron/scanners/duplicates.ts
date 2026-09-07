@@ -2,7 +2,7 @@ import os from 'os'
 import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
-import { streamFind } from './utils'
+import { findArgs, streamFind } from './utils'
 
 export interface DuplicateGroup {
   hash: string
@@ -18,13 +18,25 @@ export interface DuplicateFile {
   modified: string
 }
 
-function hashFile(filePath: string): string | null {
+/** SHA-256 of the whole file, read in chunks so a multi-GB duplicate never lands in memory. */
+export function hashFile(filePath: string): string | null {
+  const CHUNK = 1024 * 1024
+  let fd: number | null = null
   try {
-    const hash = crypto.createHash('md5')
-    hash.update(fs.readFileSync(filePath))
+    const hash = crypto.createHash('sha256')
+    fd = fs.openSync(filePath, 'r')
+    const buf = Buffer.allocUnsafe(CHUNK)
+    let bytesRead: number
+    while ((bytesRead = fs.readSync(fd, buf, 0, CHUNK, null)) > 0) {
+      hash.update(bytesRead === CHUNK ? buf : buf.subarray(0, bytesRead))
+    }
     return hash.digest('hex')
   } catch {
     return null
+  } finally {
+    if (fd !== null) {
+      try { fs.closeSync(fd) } catch {}
+    }
   }
 }
 
@@ -40,13 +52,14 @@ export async function getDuplicates(): Promise<DuplicateGroup[]> {
   }
   if (searchArgs.length === 0) return []
 
-  const paths = await streamFind([
-    ...searchArgs,
-    '-type', 'f',
-    '-size', '+1M',
-    '!', '-path', '*/.git/*',
-    '!', '-path', '*/node_modules/*',
-  ], 60000)
+  const paths = await streamFind(
+    findArgs(
+      searchArgs,
+      ['-type', 'f', '-size', '+1M'],
+      ['node_modules', '.git'],
+    ),
+    60000,
+  )
 
   // Group by size first (cheap filter)
   const sizeGroups: Record<number, string[]> = {}
