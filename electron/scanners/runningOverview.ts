@@ -3,7 +3,7 @@ import path from 'path'
 import os from 'os'
 import { exec } from 'child_process'
 import { promisify } from 'util'
-import { run } from './utils'
+import { run, shellQuote } from './utils'
 
 const execAsync = promisify(exec)
 
@@ -155,8 +155,8 @@ async function getProcessesDarwin(): Promise<{
 }
 
 async function readPlistLabel(plistPath: string): Promise<string | null> {
-  const escaped = plistPath.replace(/"/g, '\\"')
-  const label = await run(`defaults read "${escaped}" Label 2>/dev/null`, 5000)
+
+  const label = await run(`defaults read ${shellQuote(plistPath)} Label 2>/dev/null`, 5000)
   return label ? label.trim() : null
 }
 
@@ -306,10 +306,9 @@ export async function unloadUserLaunchAgent(
 
   const uid = os.userInfo().uid
   const guiTarget = `gui/${uid}`
-  const escaped = normalized.replace(/"/g, '\\"')
 
   try {
-    await execAsync(`launchctl bootout ${guiTarget} "${escaped}"`, {
+    await execAsync(`launchctl bootout ${guiTarget} ${shellQuote(normalized)}`, {
       timeout: 15000,
     })
     return { ok: true }

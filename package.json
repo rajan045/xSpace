@@ -17,7 +17,8 @@
     "website:start": "cd website && npm run start",
     "test:scanners": "tsc -p tsconfig.node.json && node scripts/check-scanners.mjs",
     "test:palette": "node scripts/check-palette.mjs",
-    "test:cache": "node scripts/check-scan-cache.mjs"
+    "test:cache": "node scripts/check-scan-cache.mjs",
+    "test:shell": "tsc -p tsconfig.node.json && node scripts/check-shell-safety.mjs"
   },
   "keywords": [],
   "author": "xSpace",
