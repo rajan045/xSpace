@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Zap, ShieldCheck, Loader2, CheckCircle2, Trash2, RefreshCw, Package, Layers, Smartphone } from 'lucide-react'
-import { formatBytes } from '../utils/format'
+import { formatBytes, tone } from '../utils/format'
 
 interface SafeItem {
   id: string
@@ -19,11 +19,11 @@ interface ScanResult {
 type PageState = 'idle' | 'scanning' | 'results' | 'cleaning' | 'done'
 
 const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  cache:        { label: 'Caches',           icon: <Layers size={14} />,     color: '#BF5AF2' },
-  build:        { label: 'Build Artifacts',  icon: <Package size={14} />,    color: '#64D2FF' },
-  simulator:    { label: 'iOS Simulators',   icon: <Smartphone size={14} />, color: '#0A84FF' },
-  trash:        { label: 'Trash',            icon: <Trash2 size={14} />,     color: '#FF453A' },
-  nodemodules:  { label: 'node_modules',   icon: <Package size={14} />,    color: '#30D158' },
+  cache:        { label: 'Caches',           icon: <Layers size={14} />,     color: tone(0.9) },
+  build:        { label: 'Build Artifacts',  icon: <Package size={14} />,    color: tone(0.74) },
+  simulator:    { label: 'iOS Simulators',   icon: <Smartphone size={14} />, color: tone(0.58) },
+  trash:        { label: 'Trash',            icon: <Trash2 size={14} />,     color: tone(0.44) },
+  nodemodules:  { label: 'node_modules',   icon: <Package size={14} />,    color: tone(0.32) },
 }
 
 export default function SmartClean() {
@@ -33,12 +33,12 @@ export default function SmartClean() {
   const [freedBytes, setFreedBytes] = useState(0)
   const [errors, setErrors] = useState<string[]>([])
 
-  async function scan() {
+  async function scan(force = false) {
     setState('scanning')
     setResult(null)
     setSelected(new Set())
     try {
-      const data = await window.electronAPI.smartScan()
+      const data = await window.electronAPI.smartScan(force)
       const items = Array.isArray(data?.items) ? data.items : []
       const totalSize =
         typeof data?.totalSize === 'number'
@@ -118,7 +118,7 @@ export default function SmartClean() {
           Does not remove browser history, cookies, saved logins, bookmarks, or extensions. Scans your home folder for{' '}
           <code className="text-white/45">node_modules</code> (skips Library, Trash, .npm). Review paths before deleting.
         </p>
-        <button type="button" onClick={scan} className="mac-btn-primary flex items-center gap-2.5 px-5 py-2.5 text-[15px] bg-accent-green hover:brightness-110 shadow-[0_1px_0_rgba(255,255,255,0.15)_inset]">
+        <button type="button" onClick={() => scan(true)} className="mac-btn-primary flex items-center gap-2.5 px-5 py-2.5 text-[15px] bg-accent-green hover:opacity-90 shadow-[0_1px_0_rgb(var(--fg)/0.15)_inset]">
           <Zap size={17} />
           Scan for Safe Junk
         </button>
@@ -196,7 +196,7 @@ export default function SmartClean() {
           </p>
         </div>
         <button
-          onClick={scan}
+          onClick={() => scan(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/50 font-medium text-sm transition-all border border-white/10"
         >
           <RefreshCw size={13} />
@@ -223,7 +223,7 @@ export default function SmartClean() {
           const meta = CATEGORY_META[category] ?? {
             label: category,
             icon: <Layers size={14} />,
-            color: '#8e8e93',
+            color: tone(0.35),
           }
           const categoryTotal = items.reduce((sum, i) => sum + i.size, 0)
           const allSelected = items.every(i => selected.has(i.id))
@@ -274,7 +274,7 @@ export default function SmartClean() {
                     >
                       {selected.has(item.id) && (
                         <svg viewBox="0 0 10 8" className="w-2.5 h-2.5">
-                          <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M1 4l2.5 2.5L9 1" stroke="rgb(var(--bg))" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       )}
                     </div>
@@ -303,7 +303,7 @@ export default function SmartClean() {
         })}
       </div>
 
-      <div className="shrink-0 pt-3 mt-2 border-t border-white/[0.06] bg-[#1e1e1e]">
+      <div className="shrink-0 pt-3 mt-2 border-t border-white/[0.06] bg-mac-window">
           <div className="flex items-center gap-4 mac-panel px-4 py-3.5">
             <div className="flex-1 min-w-0">
               <div className="text-sm text-white/50">
@@ -329,7 +329,7 @@ export default function SmartClean() {
               type="button"
               onClick={clean}
               disabled={selected.size === 0 || state === 'cleaning'}
-              className="flex items-center gap-2 rounded-mac-sm px-4 py-2 text-[13px] font-semibold bg-accent-green text-white hover:brightness-110 border border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.12)_inset] transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              className="flex items-center gap-2 rounded-mac-sm px-4 py-2 text-[13px] font-semibold bg-accent-green text-mac-window hover:opacity-90 border border-white/10 shadow-[0_1px_0_rgb(var(--fg)/0.12)_inset] transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
             >
               {state === 'cleaning' ? (
                 <>

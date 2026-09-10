@@ -1,4 +1,12 @@
 /** @type {import('tailwindcss').Config} */
+
+/* Two-color system. Everything below resolves to one of two CSS variables:
+   --fg  (white in dark mode, near-black blue in light mode)
+   --bg / --surface / --raised / --panel (blends of the dark blue base)
+   Legacy accent + red/amber names are kept so existing classes keep working. */
+const fg = (a) => `rgb(var(--fg) / ${a})`
+const v = (name) => `rgb(var(${name}) / <alpha-value>)`
+
 export default {
   content: [
     "./index.html",
@@ -7,33 +15,47 @@ export default {
   theme: {
     extend: {
       colors: {
-        /* Apple HIG–style dark surfaces */
+        /* Text + everything that used plain white */
+        white: v('--fg'),
+
+        /* Surfaces — blends of the dark blue base */
         dark: {
-          950: '#0d0d0d',
-          900: '#1c1c1e',
-          800: '#2c2c2e',
-          700: '#3a3a3c',
-          600: '#48484a',
-          500: '#636366',
+          950: v('--bg'),
+          900: v('--surface'),
+          800: v('--surface'),
+          700: v('--raised'),
+          600: v('--panel'),
+          500: v('--panel'),
         },
-        /* System accent colors (dark mode) */
+        /* Single accent — same ink/paper pair, kept under the old names */
         accent: {
-          blue: '#0A84FF',
-          purple: '#BF5AF2',
-          green: '#30D158',
-          orange: '#FF9F0A',
-          red: '#FF453A',
-          cyan: '#64D2FF',
+          blue: v('--accent'),
+          purple: v('--accent'),
+          green: v('--accent'),
+          orange: v('--accent'),
+          red: v('--accent'),
+          cyan: v('--accent'),
+        },
+        /* Status families collapse to the accent; emphasis comes from fill weight */
+        red: {
+          100: fg(0.95), 200: fg(0.9), 300: fg(0.8), 400: fg(0.92),
+          500: v('--accent'), 600: v('--accent'), 700: v('--accent'), 900: fg(0.14),
+        },
+        amber: {
+          100: fg(0.9), 200: fg(0.8), 300: fg(0.7), 400: fg(0.7),
+          500: fg(0.55), 600: fg(0.55), 700: fg(0.5), 900: fg(0.1),
         },
         mac: {
-          window: '#1e1e1e',
-          sidebar: '#252526',
-          separator: 'rgba(84, 84, 88, 0.48)',
-          label: 'rgba(255, 255, 255, 0.92)',
-          secondary: 'rgba(235, 235, 245, 0.6)',
-          tertiary: 'rgba(235, 235, 245, 0.3)',
-          fill: 'rgba(120, 120, 128, 0.2)',
-          fillHover: 'rgba(120, 120, 128, 0.28)',
+          window: v('--bg'),
+          sidebar: v('--surface'),
+          raised: v('--raised'),
+          panel: v('--panel'),
+          separator: fg(0.1),
+          label: fg(0.92),
+          secondary: fg(0.6),
+          tertiary: fg(0.3),
+          fill: fg(0.09),
+          fillHover: fg(0.14),
         },
       },
       fontFamily: {
@@ -54,7 +76,8 @@ export default {
       },
       boxShadow: {
         mac: '0 0 1px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.45)',
-        'mac-sm': '0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 0.5px rgba(255,255,255,0.08)',
+        'mac-sm': '0 1px 0 rgb(var(--fg) / 0.06) inset, 0 0 0 0.5px rgb(var(--fg) / 0.08)',
+        'mac-lg': '0 0 1px rgba(0,0,0,0.5), 0 20px 60px rgba(0,0,0,0.5)',
       },
     },
   },

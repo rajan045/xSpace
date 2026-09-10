@@ -27,6 +27,7 @@ if (!process.env.XSPACE_API_URL?.trim() && !app.isPackaged) {
 
 import os from 'os'
 import { getDiskInfo } from './scanners/diskInfo'
+import { cached, invalidateScans, DEFAULT_TTL_MS } from './scanners/scanCache'
 import { getLargeFiles } from './scanners/largeFiles'
 import { getCacheInfo } from './scanners/caches'
 import { getDuplicates } from './scanners/duplicates'
@@ -43,6 +44,7 @@ import {
 } from './scanners/runningOverview'
 import { getInstalledApps, findAppLeftovers } from './scanners/appUninstaller'
 import { startBrowserLogin, getStatus as getAuthStatus, logout as authLogout } from './auth'
+import { startCheckout } from './checkout'
 import { postAppLaunchEventFireAndForget } from './subscriptionTracking'
 
 const isDev = process.env.NODE_ENV === 'development'
@@ -63,7 +65,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     titleBarStyle: 'hiddenInset',
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#0B1120',
     ...(icon ? { icon } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -98,20 +100,22 @@ app.on('window-all-closed', () => {
 
 // ── IPC Handlers ──────────────────────────────────────────────────────────────
 
-ipcMain.handle('get-disk-info', async () => {
-  return getDiskInfo()
+// Scans cost 10–50s of disk walking. Results are reused for DEFAULT_TTL_MS so
+// switching pages is instant; every Refresh button passes force to re-walk.
+ipcMain.handle('get-disk-info', async (_e, force = false) => {
+  return cached('disk-info', DEFAULT_TTL_MS, force, getDiskInfo)
 })
 
-ipcMain.handle('get-large-files', async (_e, minSizeMB: number = 50) => {
-  return getLargeFiles(minSizeMB)
+ipcMain.handle('get-large-files', async (_e, minSizeMB: number = 50, force = false) => {
+  return cached(`large-files:${minSizeMB}`, DEFAULT_TTL_MS, force, () => getLargeFiles(minSizeMB))
 })
 
-ipcMain.handle('get-cache-info', async () => {
-  return getCacheInfo()
+ipcMain.handle('get-cache-info', async (_e, force = false) => {
+  return cached('cache-info', DEFAULT_TTL_MS, force, getCacheInfo)
 })
 
-ipcMain.handle('get-duplicates', async () => {
-  return getDuplicates()
+ipcMain.handle('get-duplicates', async (_e, force = false) => {
+  return cached('duplicates', DEFAULT_TTL_MS, force, getDuplicates)
 })
 
 ipcMain.handle('get-trash-info', async () => {
@@ -119,15 +123,19 @@ ipcMain.handle('get-trash-info', async () => {
 })
 
 ipcMain.handle('empty-trash', async () => {
-  return emptyTrash()
+  const res = await emptyTrash()
+  invalidateScans()
+  return res
 })
 
-ipcMain.handle('get-ios-data', async () => {
-  return getIOSData()
+ipcMain.handle('get-ios-data', async (_e, force = false) => {
+  return cached('ios-data', DEFAULT_TTL_MS, force, getIOSData)
 })
 
 ipcMain.handle('move-to-trash', async (_e, paths: string[]) => {
-  return moveToTrash(paths)
+  const res = await moveToTrash(paths)
+  invalidateScans() // sizes on every page are stale once something moves
+  return res
 })
 
 ipcMain.handle('delete-permanently', async (_e, paths: string[]) => {
@@ -141,13 +149,15 @@ ipcMain.handle('delete-permanently', async (_e, paths: string[]) => {
     detail: 'This cannot be undone. Files will NOT be moved to Trash.',
   })
   if (response === 1) {
-    return deleteItems(paths)
+    const res = await deleteItems(paths)
+    invalidateScans()
+    return res
   }
   return { success: false, cancelled: true, errors: [] as string[], freedBytes: 0, deletedPaths: [] as string[] }
 })
 
-ipcMain.handle('smart-scan', async () => {
-  return runSmartScan()
+ipcMain.handle('smart-scan', async (_e, force = false) => {
+  return cached('smart-scan', DEFAULT_TTL_MS, force, runSmartScan)
 })
 
 ipcMain.handle('smart-clean', async (_e, paths: string[]) => {
@@ -177,6 +187,7 @@ ipcMain.handle('smart-clean', async (_e, paths: string[]) => {
     }
   }
 
+  invalidateScans()
   return { success: errors.length === 0, freedBytes, errors, deletedPaths }
 })
 
@@ -214,6 +225,14 @@ ipcMain.handle('auth:status', async () => {
 
 ipcMain.handle('auth:logout', async () => {
   return authLogout()
+})
+
+ipcMain.handle('checkout:start', async (_e, currency: 'INR' | 'USD' = 'INR') => {
+  try {
+    return await startCheckout(currency === 'USD' ? 'USD' : 'INR')
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Checkout failed' }
+  }
 })
 
 ipcMain.handle('get-installed-apps', async () => {

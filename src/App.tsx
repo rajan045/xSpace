@@ -1,5 +1,5 @@
-import React from 'react'
-import { HashRouter, Routes, Route, useLocation } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Overview from './pages/Overview'
 import LargeFiles from './pages/LargeFiles'
@@ -13,12 +13,13 @@ import Apps from './pages/Apps'
 import { AlertTriangle } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import ErrorBoundary from './components/ErrorBoundary'
+import CommandPalette from './components/CommandPalette'
 
 function NotInElectron() {
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-[#1e1e1e]">
+    <div className="flex h-screen w-screen items-center justify-center bg-mac-window">
       <div className="text-center max-w-sm px-8">
-        <div className="w-16 h-16 rounded-[12px] bg-[#1e1e1e] border border-white/[0.08] shadow-mac-sm flex items-center justify-center mx-auto mb-5 overflow-hidden p-1">
+        <div className="w-16 h-16 rounded-[12px] bg-mac-window border border-white/[0.08] shadow-mac-sm flex items-center justify-center mx-auto mb-5 overflow-hidden p-1">
           <AppLogo size={56} className="rounded-[8px]" />
         </div>
         <h1 className="text-[17px] font-semibold text-white/90 tracking-tight mb-1">xSpace</h1>
@@ -40,15 +41,40 @@ function NotInElectron() {
   )
 }
 
+/** ⌘K opens the palette; ⌘0–8 jump straight to a page. */
+const SHORTCUT_ROUTES = [
+  '/smart-clean', '/', '/large-files', '/caches', '/duplicates',
+  '/trash', '/ios-data', '/apps', '/running',
+]
+
 function MainChrome() {
   const loc = useLocation()
+  const navigate = useNavigate()
+  const [paletteOpen, setPaletteOpen] = useState(false)
   const sectionLabel = loc.pathname === '/running' ? 'System' : 'Storage'
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!(e.metaKey || e.ctrlKey)) return
+      if (e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen(open => !open)
+        return
+      }
+      if (/^[0-9]$/.test(e.key) && SHORTCUT_ROUTES[Number(e.key)]) {
+        e.preventDefault()
+        navigate(SHORTCUT_ROUTES[Number(e.key)])
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [navigate])
 
   return (
     <div className="flex min-h-0 flex-1 overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-hidden flex flex-col min-w-0 bg-[#1e1e1e] border-l border-mac-separator">
-        <div className="drag-region h-[52px] shrink-0 flex items-end pb-2 px-5 border-b border-mac-separator bg-[#1e1e1e]">
+      <main className="flex-1 overflow-hidden flex flex-col min-w-0 bg-mac-window border-l border-mac-separator">
+        <div className="drag-region h-[52px] shrink-0 flex items-end pb-2 px-5 border-b border-mac-separator bg-mac-window">
           <span className="no-drag text-[11px] font-semibold text-white/35 uppercase tracking-wider select-none">
             {sectionLabel}
           </span>
@@ -69,6 +95,7 @@ function MainChrome() {
           </ErrorBoundary>
         </div>
       </main>
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   )
 }
@@ -81,7 +108,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <HashRouter>
-        <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#1e1e1e] text-[13px]">
+        <div className="flex h-screen w-screen flex-col overflow-hidden bg-mac-window text-[13px]">
           <MainChrome />
         </div>
       </HashRouter>

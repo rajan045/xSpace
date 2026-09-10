@@ -1,23 +1,23 @@
 import React from 'react'
 import { ExternalLink, ShieldCheck, RefreshCw, AlertCircle } from 'lucide-react'
-import { formatBytes, formatDate, formatPath, getExtColor } from '../utils/format'
+import { formatBytes, formatDate, formatPath, getExtColor, tone, toneFill } from '../utils/format'
 
 export type RiskLevel = 'auto-rebuild' | 'recoverable' | 'review'
 
 const RISK_META: Record<RiskLevel, { label: string; color: string; icon: React.ReactNode }> = {
   'auto-rebuild': {
     label: 'Auto-rebuild',
-    color: '#30D158',
+    color: tone(0.9),
     icon: <ShieldCheck size={9} />,
   },
   'recoverable': {
     label: 'Recoverable',
-    color: '#FF9F0A',
+    color: tone(0.62),
     icon: <RefreshCw size={9} />,
   },
   'review': {
     label: 'Review first',
-    color: '#FF9F0A',
+    color: tone(0.62),
     icon: <AlertCircle size={9} />,
   },
 }
@@ -29,7 +29,8 @@ interface FileCardProps {
   modified?: string
   ext?: string
   selected?: boolean
-  onSelect?: (selected: boolean) => void
+  /** Second arg carries the click event so lists can support shift-range select. */
+  onSelect?: (selected: boolean, e?: React.MouseEvent) => void
   onShowInFinder?: () => void
   badge?: string
   badgeColor?: string
@@ -57,12 +58,12 @@ export default function FileCard({
 
   return (
     <div
-      className={`flex items-start gap-3 px-3.5 py-2.5 rounded-mac-sm border transition-colors duration-100 cursor-pointer group ${
+      className={`flex items-start gap-3 px-3.5 py-2.5 rounded-mac-sm border transition-colors duration-100 cursor-pointer select-none group ${
         selected
-          ? 'bg-accent-blue/14 border-accent-blue/35 shadow-[inset_0_0_0_1px_rgba(10,132,255,0.2)]'
+          ? 'bg-accent-blue/14 border-accent-blue/35 shadow-[inset_0_0_0_1px_rgb(var(--fg)/0.2)]'
           : 'bg-dark-800/80 border-white/[0.06] hover:border-white/[0.1] hover:bg-dark-800'
       }`}
-      onClick={() => onSelect?.(!selected)}
+      onClick={e => onSelect?.(!selected, e)}
     >
       {/* Checkbox */}
       {onSelect && (
@@ -72,8 +73,8 @@ export default function FileCard({
           }`}
         >
           {selected && (
-            <svg viewBox="0 0 10 8" className="w-2.5 h-2.5 fill-white">
-              <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <svg viewBox="0 0 10 8" className="w-2.5 h-2.5">
+              <path d="M1 4l2.5 2.5L9 1" stroke="rgb(var(--bg))" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
         </div>
@@ -82,7 +83,7 @@ export default function FileCard({
       {/* Icon */}
       <div
         className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold uppercase shrink-0 mt-0.5"
-        style={{ backgroundColor: `${getExtColor(ext || '')}20`, color: getExtColor(ext || '') }}
+        style={{ backgroundColor: toneFill(0.08), color: getExtColor(ext || '') }}
       >
         {ext ? ext.slice(0, 3) : '?'}
       </div>
@@ -95,7 +96,7 @@ export default function FileCard({
           {risk && (
             <span
               className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0"
-              style={{ backgroundColor: `${risk.color}18`, color: risk.color }}
+              style={{ backgroundColor: toneFill(0.09), color: risk.color }}
             >
               {risk.icon}
               {risk.label}
@@ -105,7 +106,7 @@ export default function FileCard({
           {badge && !risk && (
             <span
               className="text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0"
-              style={{ backgroundColor: `${badgeColor || '#4f8ef7'}20`, color: badgeColor || '#4f8ef7' }}
+              style={{ backgroundColor: toneFill(0.08), color: badgeColor || tone(0.7) }}
             >
               {badge}
             </span>
@@ -116,7 +117,7 @@ export default function FileCard({
         {impact && (
           <div
             className="text-[12px] mt-1 truncate"
-            style={{ color: risk?.color ? `${risk.color}99` : 'rgba(48,209,88,0.65)' }}
+            style={{ color: tone(0.5) }}
           >
             ↪ {impact}
           </div>

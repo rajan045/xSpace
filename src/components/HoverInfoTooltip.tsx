@@ -81,7 +81,7 @@ export default function HoverInfoTooltip({
     <div
       ref={tipRef}
       role="tooltip"
-      className="fixed z-[200] w-72 max-h-[min(320px,70vh)] overflow-y-auto rounded-mac border border-white/[0.12] bg-[#2c2c2e] p-3 shadow-mac text-left pointer-events-auto"
+      className="fixed z-[200] w-72 max-h-[min(320px,70vh)] overflow-y-auto rounded-mac border border-white/[0.12] bg-mac-raised p-3 shadow-mac text-left pointer-events-auto"
       style={{ top: pos.top, left: pos.left }}
       onMouseEnter={clearHide}
       onMouseLeave={scheduleHide}

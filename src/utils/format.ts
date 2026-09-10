@@ -32,15 +32,26 @@ export function formatPath(fullPath: string): string {
   return fullPath
 }
 
+/** Two-color system: every "color" in the UI is the foreground tone at some opacity. */
+export function tone(alpha: number): string {
+  return `rgb(var(--fg) / ${alpha})`
+}
+
+/** Fill behind a tone (badges, chips, category swatches). */
+export function toneFill(alpha = 0.1): string {
+  return `rgb(var(--fg) / ${alpha})`
+}
+
+/** Ordered ramp for charts and category lists — distinct by weight, not by hue. */
+export const TONE_RAMP = [0.92, 0.74, 0.58, 0.44, 0.32, 0.22, 0.16].map(tone)
+
 export function getExtColor(ext: string): string {
-  const colorMap: Record<string, string> = {
-    mp4: '#FF453A', mov: '#FF453A', avi: '#FF453A', mkv: '#FF453A',
-    mp3: '#BF5AF2', wav: '#BF5AF2', flac: '#BF5AF2',
-    jpg: '#30D158', jpeg: '#30D158', png: '#30D158', gif: '#30D158',
-    zip: '#FF9F0A', tar: '#FF9F0A', gz: '#FF9F0A', rar: '#FF9F0A',
-    pdf: '#FF453A', doc: '#0A84FF', docx: '#0A84FF',
-    dmg: '#64D2FF', pkg: '#64D2FF',
-    js: '#FF9F0A', ts: '#0A84FF', py: '#30D158',
-  }
-  return colorMap[ext.toLowerCase()] || '#8e8e93'
+  const strong = ['mp4', 'mov', 'avi', 'mkv', 'pdf', 'dmg', 'pkg']
+  const medium = ['jpg', 'jpeg', 'png', 'gif', 'mp3', 'wav', 'flac', 'doc', 'docx']
+  const light = ['zip', 'tar', 'gz', 'rar', 'js', 'ts', 'py']
+  const e = ext.toLowerCase()
+  if (strong.includes(e)) return tone(0.9)
+  if (medium.includes(e)) return tone(0.7)
+  if (light.includes(e)) return tone(0.5)
+  return tone(0.35)
 }

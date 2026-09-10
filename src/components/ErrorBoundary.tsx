@@ -44,9 +44,9 @@ export default class ErrorBoundary extends React.Component<Props, State> {
     if (!error) return this.props.children
 
     return (
-      <div className="flex h-full w-full items-center justify-center bg-[#1e1e1e] p-8">
+      <div className="flex h-full w-full items-center justify-center bg-mac-window p-8">
         <div className="text-center max-w-md w-full">
-          <div className="w-16 h-16 rounded-[12px] bg-[#1e1e1e] border border-white/[0.08] shadow-mac-sm flex items-center justify-center mx-auto mb-5 overflow-hidden p-1">
+          <div className="w-16 h-16 rounded-[12px] bg-mac-window border border-white/[0.08] shadow-mac-sm flex items-center justify-center mx-auto mb-5 overflow-hidden p-1">
             <AppLogo size={56} className="rounded-[8px]" />
           </div>
           <div className="flex items-center justify-center gap-2 mb-2 text-accent-orange">

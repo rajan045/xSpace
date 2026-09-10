@@ -82,7 +82,7 @@ export default function ConfirmModal({
         role="dialog"
         aria-modal
         aria-labelledby={titleId}
-        className="relative z-10 w-full max-w-[440px] max-h-[min(90vh,640px)] flex flex-col bg-[#323234] border border-white/[0.1] rounded-mac shadow-mac fade-in"
+        className="relative z-10 w-full max-w-[440px] max-h-[min(90vh,640px)] flex flex-col bg-mac-panel border border-white/[0.1] rounded-mac shadow-mac fade-in"
       >
         <div className="p-5 overflow-y-auto flex-1 min-h-0">
           <div className="flex items-start gap-3 mb-4">
@@ -207,7 +207,7 @@ export default function ConfirmModal({
             onClick={onConfirm}
             className={`min-w-[96px] rounded-mac-sm px-3.5 py-1.5 text-[13px] font-medium transition-all ${
               danger
-                ? 'bg-accent-red/90 text-white hover:brightness-110 border border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.12)_inset] outline-none focus-visible:ring-2 focus-visible:ring-accent-red/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#323234]'
+                ? 'bg-accent-red text-mac-window hover:opacity-90 border border-white/10 shadow-[0_1px_0_rgb(var(--fg)/0.12)_inset] outline-none focus-visible:ring-2 focus-visible:ring-accent-red/70 focus-visible:ring-offset-2 focus-visible:ring-offset-mac-panel'
                 : 'mac-btn-primary'
             }`}
           >

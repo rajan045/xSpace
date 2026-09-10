@@ -1,7 +1,7 @@
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import { getDirSizeAsync, run } from './utils'
+import { getDirSizeAsync, run, shellQuote } from './utils'
 
 export interface InstalledApp {
   name: string
@@ -26,8 +26,8 @@ const APP_DIRS: { dir: string; location: InstalledApp['location'] }[] = [
 ]
 
 async function readBundleId(appPath: string): Promise<string> {
-  const escaped = appPath.replace(/"/g, '\\"')
-  const id = await run(`defaults read "${escaped}/Contents/Info" CFBundleIdentifier 2>/dev/null`, 5000)
+  const quotedApp = shellQuote(`${appPath}/Contents/Info`)
+  const id = await run(`defaults read ${quotedApp} CFBundleIdentifier 2>/dev/null`, 5000)
   return id.trim()
 }
 
@@ -89,7 +89,7 @@ export async function getInstalledApps(): Promise<InstalledApp[]> {
 async function getSizes(paths: string[]): Promise<Map<string, number>> {
   const map = new Map<string, number>()
   if (paths.length === 0) return map
-  const quoted = paths.map(p => `"${p.replace(/"/g, '\\"')}"`).join(' ')
+  const quoted = paths.map(shellQuote).join(' ')
   const out = await run(`du -sk ${quoted} 2>/dev/null`, 90000)
   for (const line of out.split('\n')) {
     const m = line.match(/^(\d+)\s+(.*)$/)

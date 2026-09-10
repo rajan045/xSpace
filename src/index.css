@@ -2,6 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Two-color palette ────────────────────────────────────────────────
+   #0B1120 (dark blue, near black) and #FFFFFF. Every other tone in the
+   app is one of those two at some opacity, or a blend of them.        */
+:root,
+:root[data-theme='dark'] {
+  --bg: 11 17 32;
+  --surface: 17 25 44;
+  --raised: 24 34 58;
+  --panel: 30 42 70;
+  --fg: 255 255 255;
+  --accent: 255 255 255;
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --bg: 255 255 255;
+  --surface: 243 245 250;
+  --raised: 255 255 255;
+  --panel: 255 255 255;
+  --fg: 11 17 32;
+  --accent: 11 17 32;
+  color-scheme: light;
+}
+
+/* No explicit choice → follow the system */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: 255 255 255;
+    --surface: 243 245 250;
+    --raised: 255 255 255;
+    --panel: 255 255 255;
+    --fg: 11 17 32;
+    --accent: 11 17 32;
+    color-scheme: light;
+  }
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -12,8 +49,8 @@ html, body, #root {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background-color: #1e1e1e;
-  color: rgba(255, 255, 255, 0.92);
+  background-color: rgb(var(--bg));
+  color: rgb(var(--fg) / 0.92);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.35;
@@ -32,14 +69,14 @@ html, body, #root {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgb(var(--fg) / 0.22);
   border-radius: 100px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: rgb(var(--fg) / 0.35);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
@@ -55,7 +92,7 @@ html, body, #root {
 
 /* Native-ish text selection */
 ::selection {
-  background: rgba(10, 132, 255, 0.35);
+  background: rgb(var(--fg) / 0.25);
 }
 
 @keyframes shimmer {
@@ -66,9 +103,9 @@ html, body, #root {
 .shimmer {
   background: linear-gradient(
     90deg,
-    rgba(255,255,255,0.04) 25%,
-    rgba(255,255,255,0.08) 50%,
-    rgba(255,255,255,0.04) 75%
+    rgb(var(--fg) / 0.04) 25%,
+    rgb(var(--fg) / 0.08) 50%,
+    rgb(var(--fg) / 0.04) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -91,14 +128,14 @@ html, body, #root {
   .mac-btn-default {
     @apply rounded-mac-sm px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-150;
     @apply bg-mac-fill text-white/90 hover:bg-mac-fillHover active:bg-white/[0.12];
-    @apply border border-white/[0.08] shadow-[0_1px_0_rgba(255,255,255,0.04)_inset];
+    @apply border border-white/[0.08];
     @apply outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/60;
   }
   .mac-btn-primary {
     @apply rounded-mac-sm px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-150;
-    @apply bg-accent-blue text-white hover:brightness-110 active:brightness-95;
-    @apply shadow-[0_1px_0_rgba(255,255,255,0.15)_inset];
-    @apply outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1e1e1e];
+    @apply bg-accent-blue text-mac-window hover:opacity-90 active:opacity-80;
+    
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/60 focus-visible:ring-offset-2 focus-visible:ring-offset-mac-window;
   }
   /* Reusable focus ring for custom interactive elements (rows, checkboxes, chips) */
   .mac-focus {
@@ -117,4 +154,27 @@ html, body, #root {
     opacity: 1 !important;
     transform: none !important;
   }
+}
+
+/* Theme switch shouldn't flash */
+html, body, #root, aside, main, .mac-panel {
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+/* Filled accent controls invert: accent background, window-colored label */
+.mac-btn-accent {
+  @apply rounded-mac-sm px-3.5 py-1.5 text-[13px] font-medium transition-opacity duration-150;
+  @apply bg-accent-blue text-mac-window hover:opacity-90 active:opacity-80;
+  @apply outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/60 focus-visible:ring-offset-2 focus-visible:ring-offset-mac-window;
+}
+
+.btn-destructive {
+  @apply bg-accent-red text-mac-window font-semibold border border-white/10;
+  @apply transition-opacity duration-150 hover:opacity-90 active:opacity-80;
+  @apply outline-none focus-visible:ring-2 focus-visible:ring-accent-red/60;
+}
+
+kbd {
+  @apply inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-[4px];
+  @apply bg-white/[0.08] border border-white/[0.12] text-[10px] font-medium text-white/55 font-sans;
 }

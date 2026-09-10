@@ -14,16 +14,16 @@ declare global {
   interface Window {
     electronAPI: {
       openExternal: (url: string) => Promise<boolean>
-      getDiskInfo: () => Promise<any>
-      getLargeFiles: (minSizeMB?: number) => Promise<any[]>
-      getCacheInfo: () => Promise<any[]>
-      getDuplicates: () => Promise<any[]>
+      getDiskInfo: (force?: boolean) => Promise<any>
+      getLargeFiles: (minSizeMB?: number, force?: boolean) => Promise<any[]>
+      getCacheInfo: (force?: boolean) => Promise<any[]>
+      getDuplicates: (force?: boolean) => Promise<any[]>
       getTrashInfo: () => Promise<any>
       emptyTrash: () => Promise<any>
-      getIOSData: () => Promise<any>
+      getIOSData: (force?: boolean) => Promise<any>
       moveToTrash: (paths: string[]) => Promise<any>
       deletePermanently: (paths: string[]) => Promise<any>
-      smartScan: () => Promise<{ items: any[]; totalSize: number }>
+      smartScan: (force?: boolean) => Promise<{ items: any[]; totalSize: number }>
       smartClean: (paths: string[]) => Promise<{
         success: boolean
         freedBytes: number
@@ -61,6 +61,10 @@ declare global {
       authStartLogin: () => Promise<{ signedIn: boolean; user?: AuthAccount; error?: string }>
       authStatus: () => Promise<{ signedIn: boolean; user?: AuthAccount }>
       authLogout: () => Promise<{ signedIn: boolean }>
+      startCheckout: (currency?: 'INR' | 'USD') => Promise<
+        | { ok: true; paymentId: string; status: { signedIn: boolean; user?: AuthAccount } }
+        | { ok: false; error: string; cancelled?: boolean }
+      >
       getInstalledApps: () => Promise<Array<{
         name: string
         path: string

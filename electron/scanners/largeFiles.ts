@@ -1,7 +1,7 @@
 import os from 'os'
 import path from 'path'
 import fs from 'fs'
-import { streamFind } from './utils'
+import { diskBytes, findArgs, streamFind } from './utils'
 
 export interface LargeFile {
   path: string
@@ -16,15 +16,14 @@ export async function getLargeFiles(minSizeMB: number = 50): Promise<LargeFile[]
   const minSizeBytes = minSizeMB * 1024 * 1024
 
   // Use streamFind (spawn-based, non-blocking) instead of execSync
-  const paths = await streamFind([
-    home,
-    '-type', 'f',
-    '-size', `+${minSizeMB}M`,
-    '!', '-path', '*/.git/*',
-    '!', '-path', '*/node_modules/*',
-    '!', '-path', '*/Library/Application Support/MobileSync/*',
-    '!', '-path', '*/Library/Application Support/com.apple.shazam/*',
-  ], 120000)
+  const paths = await streamFind(
+    findArgs(
+      [home],
+      ['-type', 'f', '-size', `+${minSizeMB}M`],
+      ['node_modules', '.git', 'MobileSync', 'com.apple.shazam'],
+    ),
+    120000,
+  )
 
   const files: LargeFile[] = paths
     .map(filePath => {
@@ -33,7 +32,7 @@ export async function getLargeFiles(minSizeMB: number = 50): Promise<LargeFile[]
         return {
           path: filePath,
           name: path.basename(filePath),
-          size: stat.size,
+          size: diskBytes(stat),
           modified: stat.mtime.toISOString(),
           ext: path.extname(filePath).toLowerCase().replace('.', ''),
         }

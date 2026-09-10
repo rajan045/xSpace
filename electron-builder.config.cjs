@@ -23,6 +23,7 @@ module.exports = {
   /** Avoid requiring GH_TOKEN when CI env vars are present locally. */
   publish: null,
   afterSign: "scripts/afterSign-notarize.cjs",
+  afterAllArtifactBuild: "scripts/afterAllArtifact-notarize.cjs",
   directories: {
     output: "release",
   },
